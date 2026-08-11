@@ -1,4 +1,4 @@
-# Memory Agent — Universal Memory Architecture for LLM Agents
+# Memory Agent — Memory Architecture for LLM Agents
 
 A full working implementation of the architecture proposed in
 *"A Memory Architecture for LLM with Temporal Fact Tracking and Selective
