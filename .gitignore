@@ -1,0 +1,21 @@
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Env / secrets
+backend/.env
+*.env
+
+# Node
+node_modules/
+frontend/.next/
+frontend/out/
+
+# Vector store / runtime
+backend/.vectorstore/
+backend/uploads/
+
+# OS
+.DS_Store

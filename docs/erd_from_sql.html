@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>ERD — from db/schema.sql</title>
+<style>
+  body {{ margin: 0; background: #fff; font-family: ui-sans-serif, system-ui, sans-serif; }}
+  #erd {{ max-width: 100%; }}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head><body><pre class="mermaid">erDiagram
+    users ||--o{ chat_sessions : &quot;user_id&quot;
+    chat_sessions ||--o{ messages : &quot;session_id&quot;
+    users ||--o{ memory_atoms : &quot;user_id&quot;
+    chat_sessions ||--o{ memory_atoms : &quot;session_id&quot;
+    messages ||--o{ memory_atoms : &quot;message_id&quot;
+    users ||--o{ fact_versions : &quot;user_id&quot;
+    memory_atoms ||--o{ fact_versions : &quot;memory_id&quot;
+    memory_atoms ||--o{ fact_versions : &quot;memory_id&quot;
+    chat_sessions ||--o{ retrieval_logs : &quot;session_id&quot;
+    messages ||--o{ retrieval_logs : &quot;message_id&quot;
+    memory_atoms ||--o{ retention_logs : &quot;memory_id&quot;
+    users ||--o{ media : &quot;user_id&quot;
+    chat_sessions ||--o{ media : &quot;session_id&quot;
+    messages ||--o{ media : &quot;message_id&quot;
+    memory_atoms ||--o{ media : &quot;memory_id&quot;
+    users ||--o{ user_settings : &quot;user_id&quot;
+    chat_sessions ||--o{ search_logs : &quot;session_id&quot;
+    messages ||--o{ search_logs : &quot;message_id&quot;
+    users ||--o{ documents : &quot;user_id&quot;
+    chat_sessions ||--o{ documents : &quot;session_id&quot;
+    documents ||--o{ document_chunks : &quot;doc_id&quot;
+    users {
+        UUID  user_id PROPERTY, PK
+        TEXT  name PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+    chat_sessions {
+        UUID  session_id PROPERTY, PK
+        UUID  user_id PROPERTY
+        TEXT  title PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+        TIMESTAMPTZ  updated_at PROPERTY
+    }
+    messages {
+        UUID  message_id PROPERTY, PK
+        UUID  session_id PROPERTY
+        message_role  role PROPERTY
+        TEXT  content PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+    memory_atoms {
+        UUID  memory_id PROPERTY, PK
+        UUID  user_id PROPERTY
+        UUID  session_id PROPERTY
+        UUID  source_message_id PROPERTY
+        memory_type  memory_type PROPERTY
+        TEXT  category PROPERTY
+        TEXT  subject PROPERTY
+        TEXT  attribute PROPERTY
+        TEXT  value PROPERTY
+        TEXT  content PROPERTY
+        priority_level  priority PROPERTY
+        DOUBLE  confidence_score PROPERTY
+        BOOLEAN  is_confirmed PROPERTY
+        BOOLEAN  is_pinned PROPERTY
+        BOOLEAN  is_active PROPERTY
+        retention_status  retention_status PROPERTY
+        INTEGER  access_count PROPERTY
+        TIMESTAMPTZ  valid_from PROPERTY
+        TIMESTAMPTZ valid_until PROPERTY
+        TIMESTAMPTZ expires_at PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+        TIMESTAMPTZ  updated_at PROPERTY
+    }
+    fact_versions {
+        UUID  version_id PROPERTY, PK
+        UUID  user_id PROPERTY
+        TEXT  subject PROPERTY
+        TEXT  attribute PROPERTY
+        UUID  old_memory_id PROPERTY
+        UUID  new_memory_id PROPERTY
+        TIMESTAMPTZ  changed_at PROPERTY
+        TEXT change_reason PROPERTY
+    }
+    retrieval_logs {
+        UUID  retrieval_id PROPERTY, PK
+        UUID  session_id PROPERTY
+        UUID  message_id PROPERTY
+        TEXT  query_text PROPERTY
+        JSONB  retrieved_memory_ids PROPERTY
+        TEXT retrieval_reason PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+    retention_logs {
+        UUID  retention_id PROPERTY, PK
+        UUID  memory_id PROPERTY
+        retention_action  action PROPERTY
+        TEXT reason PROPERTY
+        DOUBLE  score PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+    media {
+        UUID  media_id PROPERTY, PK
+        UUID  user_id PROPERTY
+        UUID  session_id PROPERTY
+        UUID  source_message_id PROPERTY
+        UUID  memory_id PROPERTY
+        TEXT  filename PROPERTY
+        TEXT  url PROPERTY
+        TEXT  mime_type PROPERTY
+        TEXT  description PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+    user_settings {
+        UUID  user_id PROPERTY, PK
+        TEXT  custom_instructions PROPERTY
+        TIMESTAMPTZ  updated_at PROPERTY
+    }
+    search_logs {
+        UUID  search_id PROPERTY, PK
+        UUID  session_id PROPERTY
+        UUID  message_id PROPERTY
+        TEXT  query_text PROPERTY
+        TEXT  provider PROPERTY
+        JSONB  results PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+    documents {
+        UUID  doc_id PROPERTY, PK
+        UUID  user_id PROPERTY
+        UUID  session_id PROPERTY
+        TEXT  filename PROPERTY
+        TEXT  mime_type PROPERTY
+        BIGINT  char_count PROPERTY
+        TEXT  preview PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+    document_chunks {
+        UUID  chunk_id PROPERTY, PK
+        UUID  doc_id PROPERTY
+        BIGINT  chunk_index PROPERTY
+        TEXT  text PROPERTY
+        TIMESTAMPTZ  created_at PROPERTY
+    }
+</pre></body></html>

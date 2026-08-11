@@ -1,0 +1,85 @@
+{
+  "_meta": {
+    "title": "Personal Knowledge Graph — Aarav Thapa",
+    "description": "Structured seed data for the memory architecture demo. Each memory_atom is a (subject, attribute, value) triple with temporal validity; chat_sessions feed provenance; fact_versions record when a triple was superseded.",
+    "schema": "db/schema.sql",
+    "seed_sql": "db/seed.sql (generated from this file)"
+  },
+
+  "user": {
+    "user_id": "00000000-0000-0000-0000-000000000001",
+    "name": "Aarav Thapa",
+    "created_at": "2026-07-01T09:00:00Z"
+  },
+  "chat_sessions": [
+    { "session_id": "22222222-0000-0000-0000-000000000001", "user_id": "00000000-0000-0000-0000-000000000001", "title": "Onboarding chat", "created_at": "2026-07-01T09:02:00Z" },
+    { "session_id": "22222222-0000-0000-0000-000000000002", "user_id": "00000000-0000-0000-0000-000000000001", "title": "Trip planning", "created_at": "2026-07-14T18:20:00Z" },
+    { "session_id": "22222222-0000-0000-0000-000000000003", "user_id": "00000000-0000-0000-0000-000000000001", "title": "Follow-up: job change", "created_at": "2026-08-05T11:10:00Z" }
+  ],
+
+  "messages": [
+    { "message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "role": "user",      "content": "Hi, I'm Aarav. I work as a backend engineer at Fusemachines in Kathmandu.", "created_at": "2026-07-01T09:02:10Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000002", "session_id": "22222222-0000-0000-0000-000000000001", "role": "assistant", "content": "Nice to meet you, Aarav! I've noted that you're a backend engineer at Fusemachines in Kathmandu.", "created_at": "2026-07-01T09:02:14Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000003", "session_id": "22222222-0000-0000-0000-000000000001", "role": "user",      "content": "I prefer Python over Java, and I'm vegetarian.", "created_at": "2026-07-01T09:03:40Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000004", "session_id": "22222222-0000-0000-0000-000000000001", "role": "assistant", "content": "Got it — Python preferred over Java, and vegetarian diet.", "created_at": "2026-07-01T09:03:44Z" },
+
+    { "message_id": "33333333-0000-0000-0000-000000000010", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user",      "content": "I'm planning a trip to Pokhara next month, goal is to finish it by end of August.", "created_at": "2026-07-14T18:20:30Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000011", "session_id": "22222222-0000-0000-0000-000000000002", "role": "assistant", "content": "Noted — trip to Pokhara, target completion end of August 2026.", "created_at": "2026-07-14T18:20:35Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000012", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user",      "content": "Also, never book me a window seat, I get motion sick.", "created_at": "2026-07-14T18:22:00Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000013", "session_id": "22222222-0000-0000-0000-000000000002", "role": "assistant", "content": "Understood — no window seats, ever. I'll treat that as a standing rule.", "created_at": "2026-07-14T18:22:05Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000014", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user",      "content": "Attended the Nepal AI Summit 2026 in Pokhara last week, it was great.", "created_at": "2026-07-14T18:25:00Z" },
+
+    { "message_id": "33333333-0000-0000-0000-000000000020", "session_id": "22222222-0000-0000-0000-000000000003", "role": "user",      "content": "Update: I actually left Fusemachines. I'm now a backend engineer at LeapFrog Technology.", "created_at": "2026-08-05T11:10:20Z" },
+    { "message_id": "33333333-0000-0000-0000-000000000021", "session_id": "22222222-0000-0000-0000-000000000003", "role": "assistant", "content": "Thanks for letting me know — I've updated your employer to LeapFrog Technology and archived the old record.", "created_at": "2026-08-05T11:10:25Z" }
+  ],
+
+  "memory_atoms": [
+    { "memory_id": "44444444-0000-0000-0000-000000000101", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "source_message_id": "33333333-0000-0000-0000-000000000001", "memory_type": "FACT", "category": "employment", "subject": "user", "attribute": "employer", "value": "Fusemachines", "content": "User works as a backend engineer at Fusemachines in Kathmandu.", "priority": "HIGH", "confidence_score": 0.95, "is_confirmed": true, "is_pinned": false, "is_active": false, "retention_status": "ARCHIVED", "valid_from": "2026-07-01T09:02:10Z", "valid_until": "2026-08-05T11:10:20Z", "expires_at": null },
+    { "memory_id": "44444444-0000-0000-0000-000000000102", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "source_message_id": "33333333-0000-0000-0000-000000000001", "memory_type": "FACT", "category": "employment", "subject": "user", "attribute": "job_title", "value": "Backend Engineer", "content": "User's job title is Backend Engineer.", "priority": "MEDIUM", "confidence_score": 0.95, "is_confirmed": true, "is_pinned": false, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-07-01T09:02:10Z", "valid_until": null, "expires_at": null },
+    { "memory_id": "44444444-0000-0000-0000-000000000103", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "source_message_id": "33333333-0000-0000-0000-000000000001", "memory_type": "FACT", "category": "location", "subject": "user", "attribute": "city", "value": "Kathmandu", "content": "User is based in Kathmandu.", "priority": "MEDIUM", "confidence_score": 0.9, "is_confirmed": true, "is_pinned": false, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-07-01T09:02:10Z", "valid_until": null, "expires_at": null },
+    { "memory_id": "44444444-0000-0000-0000-000000000104", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "source_message_id": "33333333-0000-0000-0000-000000000003", "memory_type": "PREFERENCE", "category": "tech", "subject": "user", "attribute": "language_preference", "value": "Python over Java", "content": "User prefers Python over Java.", "priority": "LOW", "confidence_score": 0.85, "is_confirmed": true, "is_pinned": false, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-07-01T09:03:40Z", "valid_until": null, "expires_at": null },
+    { "memory_id": "44444444-0000-0000-0000-000000000105", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "source_message_id": "33333333-0000-0000-0000-000000000003", "memory_type": "PREFERENCE", "category": "diet", "subject": "user", "attribute": "diet", "value": "vegetarian", "content": "User is vegetarian.", "priority": "HIGH", "confidence_score": 0.95, "is_confirmed": true, "is_pinned": true, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-07-01T09:03:40Z", "valid_until": null, "expires_at": null },
+
+    { "memory_id": "44444444-0000-0000-0000-000000000110", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000002", "source_message_id": "33333333-0000-0000-0000-000000000010", "memory_type": "GOAL", "category": "travel", "subject": "user", "attribute": "trip_to_pokhara", "value": "complete by 2026-08-31", "content": "User wants to complete a trip to Pokhara by end of August 2026.", "priority": "MEDIUM", "confidence_score": 0.9, "is_confirmed": true, "is_pinned": false, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-07-14T18:20:30Z", "valid_until": null, "expires_at": "2026-08-31T23:59:59Z" },
+    { "memory_id": "44444444-0000-0000-0000-000000000111", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000002", "source_message_id": "33333333-0000-0000-0000-000000000012", "memory_type": "RULE", "category": "travel", "subject": "user", "attribute": "seat_preference", "value": "never window seat", "content": "Never book a window seat for the user — causes motion sickness.", "priority": "CRITICAL", "confidence_score": 0.98, "is_confirmed": true, "is_pinned": true, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-07-14T18:22:00Z", "valid_until": null, "expires_at": null },
+    { "memory_id": "44444444-0000-0000-0000-000000000112", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000002", "source_message_id": "33333333-0000-0000-0000-000000000014", "memory_type": "EVENT", "category": "travel", "subject": "user", "attribute": "attended_event", "value": "Nepal AI Summit 2026, Pokhara", "content": "User attended the Nepal AI Summit 2026 in Pokhara.", "priority": "LOW", "confidence_score": 0.9, "is_confirmed": false, "is_pinned": false, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-07-14T18:25:00Z", "valid_until": null, "expires_at": null },
+
+    { "memory_id": "44444444-0000-0000-0000-000000000120", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000003", "source_message_id": "33333333-0000-0000-0000-000000000020", "memory_type": "FACT", "category": "employment", "subject": "user", "attribute": "employer", "value": "LeapFrog Technology", "content": "User now works at LeapFrog Technology as a backend engineer.", "priority": "HIGH", "confidence_score": 0.95, "is_confirmed": true, "is_pinned": false, "is_active": true, "retention_status": "ACTIVE", "valid_from": "2026-08-05T11:10:20Z", "valid_until": null, "expires_at": null }
+  ],
+
+  "fact_versions": [
+    { "version_id": "55555555-0000-0000-0000-000000000201", "user_id": "00000000-0000-0000-0000-000000000001", "subject": "user", "attribute": "employer", "old_memory_id": "44444444-0000-0000-0000-000000000101", "new_memory_id": "44444444-0000-0000-0000-000000000120", "changed_at": "2026-08-05T11:10:20Z", "change_reason": "User reported changing employer." }
+  ],
+
+  "retention_logs": [
+    { "retention_id": "66666666-0000-0000-0000-000000000301", "memory_id": "44444444-0000-0000-0000-000000000101", "action": "ARCHIVE", "reason": "Superseded by new employer fact.", "score": 0.0, "created_at": "2026-08-05T11:10:20Z" },
+    { "retention_id": "66666666-0000-0000-0000-000000000302", "memory_id": "44444444-0000-0000-0000-000000000105", "action": "KEEP", "reason": "Pinned dietary preference — exempt from sweep.", "score": 0.9, "created_at": "2026-08-05T12:00:00Z" }
+  ],
+
+  "retrieval_logs": [
+    { "retrieval_id": "77777777-0000-0000-0000-000000000401", "session_id": "22222222-0000-0000-0000-000000000002", "message_id": "33333333-0000-0000-0000-000000000010", "query_text": "user travel preferences and constraints", "retrieved_memory_ids": ["44444444-0000-0000-0000-000000000111", "44444444-0000-0000-0000-000000000110"], "retrieval_reason": "Trip-planning context needed seat rule and active travel goal.", "created_at": "2026-07-14T18:20:31Z" },
+    { "retrieval_id": "77777777-0000-0000-0000-000000000402", "session_id": "22222222-0000-0000-0000-000000000003", "message_id": "33333333-0000-0000-0000-000000000020", "query_text": "user employer", "retrieved_memory_ids": ["44444444-0000-0000-0000-000000000101"], "retrieval_reason": "Detecting possible fact update before writing new atom.", "created_at": "2026-08-05T11:10:21Z" }
+  ],
+
+  "media": [
+    { "media_id": "88888888-0000-0000-0000-000000000501", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000002", "source_message_id": "33333333-0000-0000-0000-000000000014", "memory_id": "44444444-0000-0000-0000-000000000112", "filename": "summit_badge.jpg", "url": "https://cdn.example.com/u-1001/summit_badge.jpg", "mime_type": "image/jpeg", "description": "Conference badge photo, Nepal AI Summit 2026", "created_at": "2026-07-14T18:26:00Z" }
+  ],
+
+  "documents": [
+    { "doc_id": "99999999-0000-0000-0000-000000000601", "user_id": "00000000-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "filename": "resume_aarav.pdf", "mime_type": "application/pdf", "char_count": 118, "preview": "Aarav Thapa — Backend Engineer. 4 years experience with Python, PostgreSQL, distributed systems...", "created_at": "2026-07-01T09:05:00Z" }
+  ],
+  "document_chunks": [
+    { "chunk_id": "aaaaaaaa-0000-0000-0000-000000000701", "doc_id": "99999999-0000-0000-0000-000000000601", "chunk_index": 0, "text": "Aarav Thapa — Backend Engineer. 4 years experience with Python, PostgreSQL, distributed systems.", "created_at": "2026-07-01T09:05:01Z" },
+    { "chunk_id": "aaaaaaaa-0000-0000-0000-000000000702", "doc_id": "99999999-0000-0000-0000-000000000601", "chunk_index": 1, "text": "Previously at Fusemachines (2023-2026); currently transitioning to LeapFrog Technology.", "created_at": "2026-07-01T09:05:01Z" }
+  ],
+
+  "search_logs": [
+    { "search_id": "bbbbbbbb-0000-0000-0000-000000000801", "session_id": "22222222-0000-0000-0000-000000000002", "message_id": "33333333-0000-0000-0000-000000000010", "query_text": "best time to visit Pokhara Nepal", "provider": "web_search", "results": [{"title": "Pokhara travel guide", "url": "https://example.com/pokhara-guide"}], "created_at": "2026-07-14T18:20:40Z" }
+  ],
+
+  "user_settings": {
+    "user_id": "00000000-0000-0000-0000-000000000001",
+    "custom_instructions": "Keep responses concise. Never suggest window seats when booking travel.",
+    "updated_at": "2026-07-14T18:22:10Z"
+  }
+}
