@@ -1,5 +1,5 @@
 -- ============================================================================
--- Universal Memory Architecture for LLM Agents
+-- Memory Architecture for LLM Agents
 -- PostgreSQL Schema (v1.1)
 --
 -- Implements: structured memory atoms, temporal fact versioning, selective
