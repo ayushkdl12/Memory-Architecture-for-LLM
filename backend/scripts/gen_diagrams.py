@@ -200,15 +200,15 @@ for (const a of json.atoms) {
   const infer = (a.value && !a.content.includes(a.value)) ? a.value : a.content;
   nodes.push({
     id: a.id,
-    label: a.subject + " → " + a.attribute + "\n" + infer.slice(0, 42),
+    label: a.subject + " → " + a.attribute + "\\n" + infer.slice(0, 42),
     shape: "dot", size: a.is_pinned ? 22 : 18,
     color: a.is_active
       ? { background: TYPE_COLORS[a.type] || "#64748b", border: a.is_pinned ? "#fbbf24" : "#0f1220" }
       : { background: "#3f3f46", border: "#71717a", opacity: 0.6 },
     font: { color: a.is_active ? "#f3f4f6" : "#a1a1aa", size: 12, background: "rgba(15,18,32,.85)" },
-    title: "[" + a.type + " · " + a.priority + "] " + a.content + "\n──\ncreated " + a.created_at.slice(0, 10)
-      + (a.expires_at ? "\nexpires " + a.expires_at.slice(0, 10) : "")
-      + (a.is_pinned ? "\n📌 pinned" : "") + (a.expired ? "\n⌛ EXPIRED" : "")
+    title: "[" + a.type + " · " + a.priority + "] " + a.content + "\\n──\\ncreated " + a.created_at.slice(0, 10)
+      + (a.expires_at ? "\\nexpires " + a.expires_at.slice(0, 10) : "")
+      + (a.is_pinned ? "\\n📌 pinned" : "") + (a.expired ? "\\n⌛ EXPIRED" : "")
   });
   byId[a.id] = a;
   const src = a.source_message_id || a.session_id;
