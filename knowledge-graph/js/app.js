@@ -1,8 +1,7 @@
 /* ============================================================
-   APP: filters, stats, legend, info panel, controls
+   APP: filters, stats, legend, info panel, controls, datasets
 ============================================================ */
 (function () {
-  const types = window.KG_TYPES || {};
   let activeFilter = "all";
 
   /* ---------------- statistics ---------------- */
@@ -15,6 +14,8 @@
   /* ---------------- entity type filters ---------------- */
   function buildFilters() {
     const container = document.getElementById("typeFilters");
+    container.innerHTML = "";
+    const types = window.KG_TYPES || {};
     const present = [];
     cy.nodes().forEach(n => {
       const t = n.data("type");
@@ -56,6 +57,7 @@
   function buildLegend() {
     const legend = document.getElementById("legend");
     legend.innerHTML = '<div class="legend-title">Legend</div>';
+    const types = window.KG_TYPES || {};
     Object.keys(types).forEach(t => {
       const item = document.createElement("div");
       item.className = "legend-item";
@@ -106,10 +108,14 @@
     cy.elements().removeClass("highlighted");
   }
 
-  cy.on("tap", "node", evt => showInfo(evt.target));
-  cy.on("tap", evt => {
-    if (evt.target === cy) hideInfo();
-  });
+  /* ---------------- per-render bindings ---------------- */
+  function bindEvents() {
+    cy.on("tap", "node", evt => showInfo(evt.target));
+    cy.on("tap", evt => {
+      if (evt.target === cy) hideInfo();
+    });
+    cy.on("layoutstop", updateStats);
+  }
   document.getElementById("infoPanel").addEventListener("click", evt => {
     if (evt.target.classList.contains("info-close")) hideInfo();
   });
@@ -137,9 +143,31 @@
   window.fitGraph = fitGraph;
   window.resetGraph = resetGraph;
 
+  /* ---------------- dataset switching ---------------- */
+  window.switchDataset = function (key) {
+    if (key === window.cyDatasetKey) return;
+    window.renderGraph(key);
+  };
+
+  document.addEventListener("kg-rendered", function (e) {
+    const key = e.detail && e.detail.key;
+    if (key) {
+      window.cyDatasetKey = key;
+      const sel = document.getElementById("datasetSelect");
+      if (sel) sel.value = key;
+    }
+    hideInfo();
+    resetSearch();
+    setFilter("all");
+    buildFilters();
+    buildLegend();
+    updateStats();
+    bindEvents();
+  });
+
   /* ---------------- init ---------------- */
+  bindEvents();
   buildFilters();
   buildLegend();
   updateStats();
-  cy.on("layoutstop", updateStats);
 })();

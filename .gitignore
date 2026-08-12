@@ -17,5 +17,8 @@ frontend/out/
 backend/.vectorstore/
 backend/uploads/
 
+# Dataset (492 MB / 2.7 MB raw — not committed)
+data/locomo10.json
+
 # OS
 .DS_Store

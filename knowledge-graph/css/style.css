@@ -68,6 +68,23 @@ body {
     text-transform: uppercase;
 }
 
+.dataset-select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 8px;
+    border-radius: 7px;
+    border: 1px solid #475569;
+    background: #1e293b;
+    color: #e2e8f0;
+    outline: none;
+    cursor: pointer;
+}
+.dataset-hint {
+    font-size: 11px;
+    color: #64748b;
+    margin-bottom: 4px;
+}
+
 .filter-btn {
     width: 100%;
     padding: 10px;

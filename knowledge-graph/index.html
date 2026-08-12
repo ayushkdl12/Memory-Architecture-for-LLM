@@ -25,6 +25,15 @@
         </div>
 
         <div class="section">
+            <div class="section-title">Dataset</div>
+            <select id="datasetSelect" class="dataset-select"
+                    onchange="switchDataset(this.value)">
+                <option value="">loading…</option>
+            </select>
+            <div class="dataset-hint">LoCoMo view: conv → sessions → memories → questions</div>
+        </div>
+
+        <div class="section">
             <div class="section-title">Entity Types</div>
             <div id="typeFilters"></div>
         </div>

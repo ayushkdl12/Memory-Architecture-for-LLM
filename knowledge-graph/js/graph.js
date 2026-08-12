@@ -1,16 +1,12 @@
 /* ============================================================
-   GRAPH: cytoscape instance + style
-   Data comes from window.GRAPH_DATA (js/data.js, generated).
+   GRAPH: cytoscape instance + style + dataset switching
+   Data comes from window.GRAPH_DATASETS (js/data.js, generated).
+   Each dataset: { generated, types, elements }.
 ============================================================ */
 (function () {
-  const data = window.GRAPH_DATA;
-
-  function nodeStyle(selector, bg) {
-    return {
-      selector: selector,
-      style: { "background-color": bg }
-    };
-  }
+  const datasets = window.GRAPH_DATASETS;
+  const keys = Object.keys(datasets);
+  let current = window.GRAPH_DATASETS_DEFAULT || keys[0];
 
   const style = [
     /* ----- default node ----- */
@@ -54,6 +50,46 @@
     nodeStyle('node[type = "Event"]', "#ec4899"),
     nodeStyle('node[type = "Document"]', "#64748b"),
     nodeStyle('node[type = "Preference"]', "#f472b6"),
+
+    /* ----- LoCoMo view ----- */
+    {
+      selector: 'node[type = "Conversation"]',
+      style: {
+        "background-color": "#a3e635",
+        "shape": "diamond",
+        "width": "110px",
+        "height": "110px"
+      }
+    },
+    {
+      selector: 'node[type = "Session"]',
+      style: {
+        "background-color": "#94a3b8",
+        "shape": "round-rectangle",
+        "width": "90px",
+        "height": "60px"
+      }
+    },
+    {
+      selector: 'node[type = "Memory"]',
+      style: {
+        "background-color": "#22d3ee",
+        "shape": "square"
+      }
+    },
+    {
+      selector: 'node[type = "Message"]',
+      style: { "background-color": "#64748b" }
+    },
+    nodeStyle('node[type = "single_hop"]', "#facc15"),
+    nodeStyle('node[type = "temporal_reasoning"]', "#fb923c"),
+    nodeStyle('node[type = "open_domain"]', "#2dd4bf"),
+    nodeStyle('node[type = "multi_hop"]', "#e879f9"),
+    nodeStyle('node[type = "adversarial"]', "#f87171"),
+    {
+      selector: 'node[type = "single_hop"], node[type = "temporal_reasoning"], node[type = "open_domain"], node[type = "multi_hop"], node[type = "adversarial"]',
+      style: { "shape": "hexagon" }
+    },
 
     /* ----- edges ----- */
     {
@@ -120,22 +156,60 @@
     }
   ];
 
-  const cy = cytoscape({
-    container: document.getElementById("cy"),
-    elements: data.elements,
-    style: style,
-    layout: {
-      name: "cose",
-      animate: true,
-      padding: 80,
-      nodeRepulsion: 600000,
-      idealEdgeLength: 160,
-      edgeElasticity: 120
-    },
-    minZoom: 0.2,
-    maxZoom: 4
+  function nodeStyle(selector, bg) {
+    return {
+      selector: selector,
+      style: { "background-color": bg }
+    };
+  }
+
+  function createCy(key) {
+    const data = datasets[key];
+    if (!data) return null;
+    return cytoscape({
+      container: document.getElementById("cy"),
+      elements: data.elements,
+      style: style,
+      layout: {
+        name: "cose",
+        animate: true,
+        padding: 80,
+        nodeRepulsion: 600000,
+        idealEdgeLength: 160,
+        edgeElasticity: 120
+      },
+      minZoom: 0.2,
+      maxZoom: 4
+    });
+  }
+
+  window.renderGraph = function (key) {
+    if (window.cyInstance) window.cyInstance.destroy();
+    current = key;
+    const cy = createCy(key);
+    if (!cy) return;
+    window.cyInstance = cy;
+    window.cy = cy;
+    window.KG_TYPES = datasets[key].types;
+    document.dispatchEvent(new CustomEvent("kg-rendered", { detail: { key: key } }));
+  };
+
+  window.datasetKeys = keys;
+
+  /* populate the dataset selector once */
+  document.addEventListener("DOMContentLoaded", function () {
+    const sel = document.getElementById("datasetSelect");
+    if (sel && keys.length > 1) {
+      sel.innerHTML = "";
+      keys.forEach(k => {
+        const opt = document.createElement("option");
+        opt.value = k;
+        opt.textContent = k === "demo" ? "Demo Profile (Aarav)" : "LoCoMo " + k.toUpperCase();
+        sel.appendChild(opt);
+      });
+      sel.value = current;
+    }
   });
 
-  window.cy = cy;
-  window.KG_TYPES = data.types;
+  window.renderGraph(current);
 })();

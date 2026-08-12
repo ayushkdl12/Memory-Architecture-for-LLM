@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ERD — from db/schema.sql</title>
+<title>ERD — memory_db</title>
 <style>
-  body { margin: 0; background: #0f1220; color: #e5e7eb;
+  body { margin: 0; background: #0b0f1f; color: #e5e7eb;
          font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
   header { padding: 16px 24px; border-bottom: 1px solid #273047;
            display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
@@ -15,124 +15,253 @@
   button { background: #1e2440; color: #dbeafe; border: 1px solid #34406b;
            border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
   button:hover { background: #2a3358; }
-  #erd { height: calc(100vh - 170px); }
-  #legend { padding: 10px 24px; display: flex; gap: 20px; flex-wrap: wrap;
-            align-items: center; font-size: 12px; color: #9ca3af;
-            border-top: 1px solid #273047; }
-  #legend .g { display: inline-flex; align-items: center; gap: 7px; }
-  .chip { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
-  .ln { width: 22px; height: 3px; display: inline-block; }
+  .wrap { padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 20px; align-items: start; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  caption { text-align: left; font-weight: 700; font-size: 14px; padding: 0 0 8px;
+            border-bottom: 2px solid; }
+  th, td { text-align: left; padding: 5px 8px; }
+  th { color: #9ca3af; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { border-top: 1px solid #1f2937; }
+  .pk { color: #fbbf24; }
+  .fk { color: #60a5fa; }
+  .t { color: #94a3b8; font-size: 11px; }
+  .r { color: #f87171; }
+  .c { color: #4ade80; }
+  .rel { padding: 10px 24px; font-size: 12px; color: #cbd5e1; background: #0f1525;
+         border-top: 1px solid #273047; }
+  .rel b { color: #e5e7eb; }
+  .chip { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; }
   #err { display: none; background: #fde8e8; color: #7f1d1d; padding: 10px 16px;
          font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
 </style>
-<script src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
 </head>
 <body>
 <div id="err"></div>
 <header>
   <h1>memory_db — ER Diagram</h1>
-  <span class="sub">compiled from <code>db/schema.sql</code> · solid = ON DELETE CASCADE · dashed = ON DELETE SET NULL · double-click a table to expand columns</span>
+  <span class="sub">compiled from <code>db/schema.sql</code> · 12 tables · PK = primary key · FK = foreign key · Cardinality: <b>1</b> to <b>N</b></span>
   <div id="toolbar">
-    <button onclick="expandAll()">Show all columns</button>
-    <button onclick="collapseAll()">Compact</button>
-    <button onclick="network.fit()">Fit view</button>
+    <button onclick="window.print()">Print / Save PDF</button>
   </div>
 </header>
-<div id="erd"></div>
-<div id="legend">
-  <span class="g"><span class="chip" style="background:#3b82f6"></span>Core / Identity</span>
-  <span class="g"><span class="chip" style="background:#22c55e"></span>Conversation</span>
-  <span class="g"><span class="chip" style="background:#6366f1"></span>Memory hub</span>
-  <span class="g"><span class="chip" style="background:#64748b"></span>Audit</span>
-  <span class="g"><span class="chip" style="background:#a855f7"></span>Feature</span>
-  <span class="g"><span style="background:#fbbf24;border-radius:50%">🔑</span> primary key</span>
-  <span class="g"><span class="ln" style="background:#64748b"></span> FK → N:1 (solid=CASCADE, dashed=SET NULL)</span>
+<div class="wrap">
+  <div>
+    <table>
+      <caption style="border-color:#3b82f6"><span class="chip" style="background:#3b82f6"></span>users</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">user_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td>name</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="rel">
+      <span class="c">1</span> ─── <b>chat_sessions.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>memory_atoms.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>fact_versions.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>media.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>user_settings.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>documents.user_id</b> <span class="r">ON DELETE CASCADE</span>
+    </div>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#22c55e"><span class="chip" style="background:#22c55e"></span>chat_sessions</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">session_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
+        <tr><td>title</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+        <tr><td>updated_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="rel">
+      <span class="c">1</span> ─── <b>messages.session_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>memory_atoms.session_id</b> <span class="r">ON DELETE SET NULL</span><br>
+      <span class="c">1</span> ─── <b>retrieval_logs.session_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>search_logs.session_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>media.session_id</b> <span class="r">ON DELETE SET NULL</span><br>
+      <span class="c">1</span> ─── <b>documents.session_id</b> <span class="r">ON DELETE SET NULL</span>
+    </div>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#22c55e"><span class="chip" style="background:#22c55e"></span>messages</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">message_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
+        <tr><td>role</td><td class="t">message_role</td><td></td><td></td></tr>
+        <tr><td>content</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="rel">
+      <span class="c">1</span> ─── <b>memory_atoms.source_message_id</b> <span class="r">ON DELETE SET NULL</span><br>
+      <span class="c">1</span> ─── <b>retrieval_logs.message_id</b> <span class="r">ON DELETE SET NULL</span><br>
+      <span class="c">1</span> ─── <b>search_logs.message_id</b> <span class="r">ON DELETE SET NULL</span><br>
+      <span class="c">1</span> ─── <b>media.source_message_id</b> <span class="r">ON DELETE SET NULL</span>
+    </div>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#6366f1"><span class="chip" style="background:#6366f1"></span>memory_atoms</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">memory_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
+        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
+        <tr><td class="fk">source_message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
+        <tr><td>memory_type</td><td class="t">memory_type</td><td></td><td></td></tr>
+        <tr><td>category</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>subject</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>attribute</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>value</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>content</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>priority</td><td class="t">priority_level</td><td></td><td></td></tr>
+        <tr><td>confidence_score</td><td class="t">DOUBLE PRECISION</td><td></td><td></td></tr>
+        <tr><td>is_confirmed</td><td class="t">BOOLEAN</td><td></td><td></td></tr>
+        <tr><td>is_pinned</td><td class="t">BOOLEAN</td><td></td><td></td></tr>
+        <tr><td>is_active</td><td class="t">BOOLEAN</td><td></td><td></td></tr>
+        <tr><td>retention_status</td><td class="t">retention_status</td><td></td><td></td></tr>
+        <tr><td>access_count</td><td class="t">INTEGER</td><td></td><td></td></tr>
+        <tr><td>valid_from</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+        <tr><td>valid_until</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+        <tr><td>expires_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+        <tr><td>updated_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="rel">
+      <span class="c">1</span> ─── <b>fact_versions.old_memory_id</b> <span class="r">ON DELETE SET NULL</span><br>
+      <span class="c">1</span> ─── <b>fact_versions.new_memory_id</b> <span class="r">ON DELETE SET NULL</span><br>
+      <span class="c">1</span> ─── <b>retention_logs.memory_id</b> <span class="r">ON DELETE CASCADE</span><br>
+      <span class="c">1</span> ─── <b>media.memory_id</b> <span class="r">ON DELETE SET NULL</span>
+    </div>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#64748b"><span class="chip" style="background:#64748b"></span>fact_versions</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">version_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
+        <tr><td>subject</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>attribute</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td class="fk">old_memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
+        <tr><td class="fk">new_memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
+        <tr><td>changed_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+        <tr><td>change_reason</td><td class="t">TEXT</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#64748b"><span class="chip" style="background:#64748b"></span>retrieval_logs</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">retrieval_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
+        <tr><td class="fk">message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
+        <tr><td>query_text</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>retrieved_memory_ids</td><td class="t">JSONB</td><td></td><td></td></tr>
+        <tr><td>retrieval_reason</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#64748b"><span class="chip" style="background:#64748b"></span>retention_logs</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">retention_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
+        <tr><td>action</td><td class="t">retention_action</td><td></td><td></td></tr>
+        <tr><td>reason</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>score</td><td class="t">DOUBLE PRECISION</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>media</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">media_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
+        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
+        <tr><td class="fk">source_message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
+        <tr><td class="fk">memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
+        <tr><td>filename</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>url</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>mime_type</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>description</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>user_settings</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">user_id</td><td class="t">UUID</td><td class="pk">PK</td><td>users(user_id)</td></tr>
+        <tr><td>custom_instructions</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>updated_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>search_logs</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">search_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
+        <tr><td class="fk">message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
+        <tr><td>query_text</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>provider</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>results</td><td class="t">JSONB</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>documents</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">doc_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
+        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
+        <tr><td>filename</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>mime_type</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>char_count</td><td class="t">BIGINT</td><td></td><td></td></tr>
+        <tr><td>preview</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="rel">
+      <span class="c">1</span> ─── <b>document_chunks.doc_id</b> <span class="r">ON DELETE CASCADE</span>
+    </div>
+  </div>
+  <div>
+    <table>
+      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>document_chunks</caption>
+      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
+      <tbody>
+        <tr><td class="pk">chunk_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
+        <tr><td class="fk">doc_id</td><td class="t">UUID</td><td class="fk">FK</td><td>documents(doc_id)</td></tr>
+        <tr><td>chunk_index</td><td class="t">BIGINT</td><td></td><td></td></tr>
+        <tr><td>text</td><td class="t">TEXT</td><td></td><td></td></tr>
+        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
-<script>
-const D = {"tables": {"users": {"group": "core", "cols": [{"n": "user_id", "t": "UUID", "pk": true, "fk": null}, {"n": "name", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": []}, "chat_sessions": {"group": "conversation", "cols": [{"n": "session_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "title", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id"]}, "messages": {"group": "conversation", "cols": [{"n": "message_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "role", "t": "message_role", "pk": false, "fk": null}, {"n": "content", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["session_id"]}, "memory_atoms": {"group": "hub", "cols": [{"n": "memory_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "source_message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "memory_type", "t": "memory_type", "pk": false, "fk": null}, {"n": "category", "t": "TEXT", "pk": false, "fk": null}, {"n": "subject", "t": "TEXT", "pk": false, "fk": null}, {"n": "attribute", "t": "TEXT", "pk": false, "fk": null}, {"n": "value", "t": "TEXT", "pk": false, "fk": null}, {"n": "content", "t": "TEXT", "pk": false, "fk": null}, {"n": "priority", "t": "priority_level", "pk": false, "fk": null}, {"n": "confidence_score", "t": "DOUBLE PRECISION", "pk": false, "fk": null}, {"n": "is_confirmed", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "is_pinned", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "is_active", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "retention_status", "t": "retention_status", "pk": false, "fk": null}, {"n": "access_count", "t": "INTEGER", "pk": false, "fk": null}, {"n": "valid_from", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "valid_until", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "expires_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id", "session_id", "source_message_id"]}, "fact_versions": {"group": "audit", "cols": [{"n": "version_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "subject", "t": "TEXT", "pk": false, "fk": null}, {"n": "attribute", "t": "TEXT", "pk": false, "fk": null}, {"n": "old_memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "new_memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "changed_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "change_reason", "t": "TEXT", "pk": false, "fk": null}], "fks": ["user_id", "old_memory_id", "new_memory_id"]}, "retrieval_logs": {"group": "audit", "cols": [{"n": "retrieval_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "query_text", "t": "TEXT", "pk": false, "fk": null}, {"n": "retrieved_memory_ids", "t": "JSONB", "pk": false, "fk": null}, {"n": "retrieval_reason", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["session_id", "message_id"]}, "retention_logs": {"group": "audit", "cols": [{"n": "retention_id", "t": "UUID", "pk": true, "fk": null}, {"n": "memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "CASCADE"}}, {"n": "action", "t": "retention_action", "pk": false, "fk": null}, {"n": "reason", "t": "TEXT", "pk": false, "fk": null}, {"n": "score", "t": "DOUBLE PRECISION", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["memory_id"]}, "media": {"group": "feature", "cols": [{"n": "media_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "source_message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "filename", "t": "TEXT", "pk": false, "fk": null}, {"n": "url", "t": "TEXT", "pk": false, "fk": null}, {"n": "mime_type", "t": "TEXT", "pk": false, "fk": null}, {"n": "description", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id", "session_id", "source_message_id", "memory_id"]}, "user_settings": {"group": "feature", "cols": [{"n": "user_id", "t": "UUID", "pk": true, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "custom_instructions", "t": "TEXT", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id"]}, "search_logs": {"group": "audit", "cols": [{"n": "search_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "query_text", "t": "TEXT", "pk": false, "fk": null}, {"n": "provider", "t": "TEXT", "pk": false, "fk": null}, {"n": "results", "t": "JSONB", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["session_id", "message_id"]}, "documents": {"group": "feature", "cols": [{"n": "doc_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "filename", "t": "TEXT", "pk": false, "fk": null}, {"n": "mime_type", "t": "TEXT", "pk": false, "fk": null}, {"n": "char_count", "t": "BIGINT", "pk": false, "fk": null}, {"n": "preview", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id", "session_id"]}, "document_chunks": {"group": "feature", "cols": [{"n": "chunk_id", "t": "UUID", "pk": true, "fk": null}, {"n": "doc_id", "t": "UUID", "pk": false, "fk": {"to": "documents", "col": "doc_id", "on_delete": "CASCADE"}}, {"n": "chunk_index", "t": "BIGINT", "pk": false, "fk": null}, {"n": "text", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["doc_id"]}}, "positions": {"users": [0, 0], "chat_sessions": [330, -170], "messages": [330, 170], "memory_atoms": [660, 0], "fact_versions": [1010, -330], "retrieval_logs": [1010, -110], "retention_logs": [1010, 110], "search_logs": [1010, 330], "media": [1330, -290], "documents": [1330, -70], "document_chunks": [1330, 150], "user_settings": [1330, 380]}};
-const GROUPS = {
-  core:       { color: "#3b82f6", fill: "#16244a" },
-  conversation:{ color: "#22c55e", fill: "#10271c" },
-  hub:        { color: "#6366f1", fill: "#1c1b4a" },
-  audit:      { color: "#64748b", fill: "#151d2b" },
-  feature:    { color: "#a855f7", fill: "#241540" }
-};
-const expanded = {};
-
-function cardLabel(name, t, full) {
-  const g = GROUPS[t.group];
-  const pk = t.cols.filter(c => c.pk);
-  const fk = t.cols.filter(c => c.fk);
-  const rest = t.cols.filter(c => !c.pk && !c.fk);
-  const lines = [name];
-  if (full) {
-    for (const c of t.cols)
-      lines.push((c.pk ? "🔑 " : (c.fk ? "· " : "  ")) + c.n);
-  } else {
-    pk.forEach(c => lines.push("🔑 " + c.n));
-    if (fk.length) lines.push("· " + fk.map(c => c.n).join(", "));
-    if (rest.length) lines.push("… " + rest.length + " more");
-  }
-  return lines.join("\n");
-}
-
-const nodes = [];
-const edges = [];
-const byName = {};
-for (const [name, t] of Object.entries(D.tables)) {
-  const g = GROUPS[t.group];
-  byName[name] = { t, g, full: false };
-  nodes.push({
-    id: name, label: cardLabel(name, t, false), shape: "box",
-    color: { background: g.fill, border: g.color, highlight: { background: g.fill, border: "#ffffff" } },
-    font: { color: "#f1f5f9", face: "ui-monospace, Menlo, monospace", size: 12, multi: false },
-    borderRadius: 10, borderWidth: 2, widthConstraint: { minimum: 150, maximum: 240 },
-    x: D.positions[name][0], y: D.positions[name][1], fixed: { x: true, y: true },
-    mass: 4, title: name.toUpperCase() + "\n" + t.cols.map(c => c.n + " " + c.t + (c.fk ? " → " + c.fk.to + " (" + c.fk.on_delete + ")" : "")).join("\n")
-  });
-}
-for (const [child, t] of Object.entries(D.tables)) {
-  for (const c of t.cols) {
-    if (!c.fk) continue;
-    const g = GROUPS[byName[c.fk.to].g.color];
-    edges.push({
-      from: child, to: c.fk.to,
-      color: { color: byName[c.fk.to].g.color, opacity: 0.9 },
-      width: 1.8, dashes: c.fk.on_delete === "SET NULL" ? [5, 4] : false,
-      arrows: { to: { enabled: true, scaleFactor: 0.8 } },
-      label: "N:1", font: { size: 10, color: "#cbd5e1", background: "#0f1220" },
-      title: child + "." + c.n + " → " + c.fk.to + "." + c.fk.col + "  [" + c.fk.on_delete + "]",
-      smooth: { enabled: true, type: "curvedCW", roundness: 0.12 }
-    });
-  }
-}
-
-const container = document.getElementById("erd");
-const network = new vis.Network(container, { nodes, edges }, {
-  physics: false,
-  interaction: { hover: true, tooltipDelay: 120, navigationButtons: true, keyboard: true },
-  nodes: { shadow: { enabled: true, color: "rgba(0,0,0,0.4)" } },
-  edges: { selectionWidth: 2.5 }
-});
-network.on("doubleClick", p => {
-  if (p.nodes.length !== 1) return;
-  const name = p.nodes[0];
-  byName[name].full = !byName[name].full;
-  network.update([{ id: name, label: cardLabel(name, byName[name].t, byName[name].full) }]);
-});
-function expandAll() {
-  for (const name of Object.keys(byName)) byName[name].full = true;
-  network.update(Object.entries(byName).map(([name, o]) => ({ id: name, label: cardLabel(name, o.t, true) })));
-}
-function collapseAll() {
-  for (const name of Object.keys(byName)) byName[name].full = false;
-  network.update(Object.entries(byName).map(([name, o]) => ({ id: name, label: cardLabel(name, o.t, false) })));
-}
-window.onerror = (msg, src, line) => {
-  const el = document.getElementById("err");
-  el.style.display = "block";
-  el.textContent = "Browser error: " + msg + " (" + (src || "") + ":" + line + ")";
-};
-</script>
 </body>
 </html>

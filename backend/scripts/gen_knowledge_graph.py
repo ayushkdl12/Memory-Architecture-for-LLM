@@ -1,32 +1,45 @@
 #!/usr/bin/env python
-"""Generate the Knowledge Graph Explorer data from db/seed_data.json.
+"""Generate the Knowledge Graph Explorer data from db/seed_data.json and/or the
+LoCoMo-MC10 raw conversation dataset.
 
 Produces:
-  knowledge-graph/js/data.js     (window.GRAPH_DATA — works from file://)
-  knowledge-graph/data/graph.json  (same elements, pure JSON)
+  knowledge-graph/js/data.js  (window.GRAPH_DATASETS + window.GRAPH_DATA — works from file://)
+  knowledge-graph/data/graph.json  (dump of the same, all datasets)
 
-Mapping:
-  - every memory_atom is a (subject, attribute, value) triple
-  - subject "user"          -> Person node (Aarav Thapa)
-  - attributes (employer, city, language_preference, diet, seat_preference,
-    trip_to_pokhara, attended_event) -> typed entity nodes + relationship edges
-  - fact_versions           -> REPLACED edge (old <- new)
-  - documents + chunks      -> Document node, MENTIONS edges to technologies
+Datasets:
+  demo   — Aarav Thapa profile graph from db/seed_data.json
+           (memory atoms -> typed entities, fact_versions -> REPLACED,
+            documents+chunks -> MENTIONS)
+  locomo — LoCoMo-MC10 raw v1 conversation graph from data/locomo10.json
+           (conversation -> sessions -> speakers/messages, session summaries
+            as Memory nodes, event_summary events, observation facts folded
+            into session descriptions, QA questions typed by category)
+
+Mapping (LoCoMo categories -> question types, per the LoCoMo paper):
+  1 -> single_hop, 2 -> temporal_reasoning, 3 -> open_domain,
+  4 -> multi_hop, 5 -> adversarial
 
 Usage:
-    ./.venv/bin/python scripts/gen_knowledge_graph.py
+    ./.venv/bin/python scripts/gen_knowledge_graph.py                 # both datasets
+    ./.venv/bin/python scripts/gen_knowledge_graph.py --source demo    # demo only
+    ./.venv/bin/python scripts/gen_knowledge_graph.py --source locomo  # locomo only
+    ./.venv/bin/python scripts/gen_knowledge_graph.py --conv conv-26 --max-questions 15
 """
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
 import subprocess
 import sys
 from datetime import datetime, timezone
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SEED = os.path.join(ROOT, "db", "seed_data.json")
+LOCOMO_RAW = os.path.join(ROOT, "data", "locomo10.json")       # 2.7 MB raw v1 (gitignored)
+LOCOMO_SAMPLE = os.path.join(ROOT, "data", "locomo_sample.json")  # extracted cache (committed)
 DATA_JS = os.path.join(ROOT, "knowledge-graph", "js", "data.js")
 GRAPH_JSON = os.path.join(ROOT, "knowledge-graph", "data", "graph.json")
 INDEX = os.path.join(ROOT, "knowledge-graph", "index.html")
@@ -40,12 +53,28 @@ TYPE_COLORS = {
     "Event": "#ec4899",
     "Document": "#64748b",
     "Preference": "#f472b6",
+    "Conversation": "#a3e635",
+    "Session": "#94a3b8",
+    "Memory": "#22d3ee",
+    "Message": "#64748b",
+    "single_hop": "#facc15",
+    "temporal_reasoning": "#fb923c",
+    "open_domain": "#2dd4bf",
+    "multi_hop": "#e879f9",
+    "adversarial": "#f87171",
+}
+
+CATEGORY_TO_TYPE = {
+    1: "single_hop",
+    2: "temporal_reasoning",
+    3: "open_domain",
+    4: "multi_hop",
+    5: "adversarial",
 }
 
 
 class Builder:
-    def __init__(self, seed: dict):
-        self.seed = seed
+    def __init__(self):
         self.nodes: list[dict] = []
         self.edges: list[dict] = []
         self._ids: set[str] = set()
@@ -82,8 +111,16 @@ def slug(value: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", value.strip().lower()).strip("-")
 
 
-def build(seed: dict) -> list[dict]:
-    b = Builder(seed)
+def clip(text: str, n: int) -> str:
+    text = " ".join(text.split())
+    return text if len(text) <= n else text[: n - 1] + "…"
+
+
+# ============================================================================
+# demo dataset (from db/seed_data.json)
+# ============================================================================
+def build_demo(seed: dict) -> list[dict]:
+    b = Builder()
     user = seed["user"]["name"]  # "Aarav Thapa"
     first = user.split()[0]
     person = b.node("person-user", user, "Person",
@@ -180,24 +217,222 @@ def build(seed: dict) -> list[dict]:
     return b.elements()
 
 
-def main() -> int:
-    seed = json.load(open(SEED))
-    elements = build(seed)
-    payload = {
-        "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-        "types": TYPE_COLORS,
-        "elements": elements,
+# ============================================================================
+# locomo dataset (from data/locomo10.json — LoCoMo-MC10 raw v1)
+# ============================================================================
+def extract_locomo_sample(*, conv: str) -> dict:
+    """Extract one conversation from the raw dataset into the small cache file."""
+    raw = json.load(open(LOCOMO_RAW))
+    record = next(r for r in raw if r["sample_id"] == conv)
+    conv_data = record["conversation"]  # speaker_a/b, session_N, session_N_date_time
+    summary = record["session_summary"]
+    events = record["event_summary"]
+    observations = record["observation"]
+
+    sessions = []
+    i = 1
+    while f"session_{i}" in conv_data:
+        sid = f"session_{i}"
+        ses = {
+            "id": sid,
+            "datetime": conv_data.get(f"{sid}_date_time", ""),
+            "summary": summary.get(f"{sid}_summary", ""),
+            "events": events.get(f"events_{sid}", {}),
+            "turns": conv_data[sid],
+        }
+        obs = observations.get(f"{sid}_observation", {})
+        ses["observations"] = {k: [it[0] for it in v] for k, v in obs.items()}
+        sessions.append(ses)
+        i += 1
+
+    sample = {
+        "dataset": "LoCoMo-MC10 raw v1",
+        "sample_id": conv,
+        "speaker_a": conv_data["speaker_a"],
+        "speaker_b": conv_data["speaker_b"],
+        "sessions": sessions,
+        "questions": [
+            {
+                "id": f"Q{idx}",
+                "category": q["category"],
+                "question": q["question"],
+                "answer": str(q.get("answer", "")),
+                "evidence": q.get("evidence", []),
+            }
+            for idx, q in enumerate(record["qa"], start=1)
+        ],
     }
+    os.makedirs(os.path.dirname(LOCOMO_SAMPLE), exist_ok=True)
+    with open(LOCOMO_SAMPLE, "w") as f:
+        json.dump(sample, f, indent=1)
+    print(f"wrote {LOCOMO_SAMPLE} — {len(sample['sessions'])} sessions, "
+          f"{len(sample['questions'])} questions")
+    return sample
+
+
+def load_locomo_sample(*, conv: str) -> dict:
+    if not os.path.exists(LOCOMO_RAW):
+        raise SystemExit(
+            f"{LOCOMO_RAW} not found — download it first:\n"
+            "  curl -L 'https://huggingface.co/datasets/Percena/locomo-mc10/"
+            "resolve/main/raw/locomo10.json' -o data/locomo10.json")
+    if not os.path.exists(LOCOMO_SAMPLE):
+        return extract_locomo_sample(conv=conv)
+    sample = json.load(open(LOCOMO_SAMPLE))
+    if sample["sample_id"] != conv:
+        return extract_locomo_sample(conv=conv)
+    return sample
+
+
+def balance_questions(questions: list[dict], max_total: int) -> list[dict]:
+    """Evenly sample questions across the 5 categories, at least 1 each."""
+    if len(questions) <= max_total:
+        return questions
+    by_cat: dict[int, list[dict]] = {}
+    for q in questions:
+        by_cat.setdefault(q["category"], []).append(q)
+    cats = sorted(by_cat)
+    per = max(1, max_total // len(cats))
+    picked: list[dict] = []
+    for c in cats:
+        pool = by_cat[c]
+        step = max(1, len(pool) // per)
+        picked.extend(pool[::step][:per])
+    return picked[:max_total]
+
+
+def session_key_from_evidence(evidence: str, sessions: list[dict]) -> str | None:
+    m = re.match(r"D(\d+)", evidence)
+    if not m:
+        return None
+    n = int(m.group(1))
+    if 1 <= n <= len(sessions):
+        return f"session_{n}"
+    return None
+
+
+def build_locomo(sample: dict, *, max_questions: int) -> list[dict]:
+    b = Builder()
+    conv_id = sample["sample_id"]
+    sp_a, sp_b = sample["speaker_a"], sample["speaker_b"]
+    sessions = sample["sessions"]
+
+    conv = b.node("conv-" + conv_id, conv_id, "Conversation",
+                  f"{sp_a} & {sp_b} · {len(sessions)} sessions over "
+                  f"{sessions[0]['datetime']} → {sessions[-1]['datetime']} · "
+                  f"{len(sample['questions'])} questions")
+    pa = b.node("person-" + slug(sp_a), sp_a, "Person",
+                f"Conversation participant A.")
+    pb = b.node("person-" + slug(sp_b), sp_b, "Person",
+                f"Conversation participant B.")
+    b.edge(conv, pa, "FEATURES")
+    b.edge(conv, pb, "FEATURES")
+
+    for i, ses in enumerate(sessions, start=1):
+        sid = ses["id"]
+        n_turns = len(ses["turns"])
+        obs_parts = []
+        for k, facts in ses.get("observations", {}).items():
+            for fact in facts[:2]:
+                obs_parts.append(f"[{k}] {fact}")
+        obs_txt = ("\n".join(obs_parts) or "no observation facts") + f"\n({n_turns} turns)"
+
+        sess = b.node("s-" + sid, f"S{i}", "Session",
+                      f"{ses['datetime']} · {n_turns} turns\n" + clip(ses["summary"], 220)
+                      + "\nObservations:\n" + clip(obs_txt, 200))
+        b.edge(conv, sess, "CONTAINS")
+        b.edge(pa, sess, "PARTICIPATED")
+        b.edge(pb, sess, "PARTICIPATED")
+
+        mem = b.node("m-" + sid, f"memory S{i}", "Memory",
+                     clip(ses["summary"], 400) or "No summary in dataset.")
+        b.edge(sess, mem, "PRODUCED")
+
+        # events per speaker
+        for speaker in (sp_a, sp_b):
+            for j, ev in enumerate(ses["events"].get(speaker, [])):
+                eid = b.node(f"evt-{slug(sid)}-{j}", clip(ev, 46), "Event",
+                             clip(ev, 400) + f"\n({ses['datetime']})")
+                b.edge(eid, "person-" + slug(speaker), "PERFORMED_BY")
+                b.edge(eid, sess, "OCCURRED_IN")
+
+        # first + last turns as Message nodes
+        turns = ses["turns"]
+        picks = turns[:1] + turns[-1:] if len(turns) > 2 else turns
+        for t in picks:
+            sp = t.get("speaker", "?")
+            mid = f"{sid}-t{slug(t.get('dia_id', ''))}"
+            b.node(mid, f"{sp}: {clip(t.get('text', ''), 40)}", "Message",
+                   f"{t.get('dia_id', '')} · {clip(t.get('text', ''), 400)}")
+            b.edge("person-" + slug(sp), mid, "SAID")
+            b.edge(sess, mid, "IN_SESSION")
+
+    # questions -> typed nodes + evidence edges
+    for q in balance_questions(sample["questions"], max_questions):
+        qtype = CATEGORY_TO_TYPE.get(q["category"], "single_hop")
+        desc = f"Q: {q['question']}\nAnswer: {q['answer']}"
+        if q["evidence"]:
+            desc += f"\nEvidence: {', '.join(q['evidence'])}"
+        qid = b.node("q-" + slug(q["id"]), f"{q['id']} · {qtype}", qtype, desc)
+        b.edge(conv, qid, "PART_OF")
+        ev = next((e for e in q["evidence"] if e), "")
+        sref = session_key_from_evidence(ev, sessions)
+        if sref:
+            b.edge(qid, "s-" + sref, "BASED_ON")
+
+    return b.elements()
+
+
+# ============================================================================
+# output
+# ============================================================================
+def write_datasets(datasets: dict[str, list[dict]]) -> None:
+    payloads = {}
+    for name, elements in datasets.items():
+        payloads[name] = {
+            "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "types": TYPE_COLORS,
+            "elements": elements,
+        }
+
+    lines = ["/* generated by gen_knowledge_graph.py — do not edit */",
+             "window.KG_TYPES = " + json.dumps(TYPE_COLORS) + ";",
+             "window.GRAPH_DATASETS = " + json.dumps(payloads) + ";",
+             "window.GRAPH_DATA = window.GRAPH_DATASETS" +
+             ("['" + next(iter(payloads)) + "']" if len(payloads) == 1
+              else "['demo']") + ";  // default dataset",
+             ]
     os.makedirs(os.path.dirname(DATA_JS), exist_ok=True)
-    os.makedirs(os.path.dirname(GRAPH_JSON), exist_ok=True)
     with open(DATA_JS, "w") as f:
-        f.write("/* generated from db/seed_data.json — do not edit */\n"
-                "window.GRAPH_DATA = " + json.dumps(payload) + ";\n")
+        f.write("\n".join(lines) + "\n")
+    os.makedirs(os.path.dirname(GRAPH_JSON), exist_ok=True)
     with open(GRAPH_JSON, "w") as f:
-        json.dump(payload, f, indent=2)
-    n_nodes = sum(1 for e in elements if "source" not in e["data"])
-    n_edges = len(elements) - n_nodes
-    print(f"wrote {DATA_JS} and {GRAPH_JSON} — {n_nodes} nodes, {n_edges} edges")
+        json.dump(payloads, f, indent=2)
+
+    for name, elements in payloads.items():
+        n_nodes = sum(1 for e in elements["elements"] if "source" not in e["data"])
+        n_edges = len(elements["elements"]) - n_nodes
+        print(f"  {name}: {n_nodes} nodes, {n_edges} edges")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--source", choices=["demo", "locomo", "both"], default="both")
+    ap.add_argument("--conv", default="conv-26")
+    ap.add_argument("--max-questions", type=int, default=15)
+    args = ap.parse_args()
+
+    datasets: dict[str, list[dict]] = {}
+    if args.source in ("demo", "both"):
+        seed = json.load(open(SEED))
+        datasets["demo"] = build_demo(seed)
+    if args.source in ("locomo", "both"):
+        sample = load_locomo_sample(conv=args.conv)
+        datasets["locomo"] = build_locomo(sample, max_questions=args.max_questions)
+
+    print("writing knowledge-graph/js/data.js + data/graph.json")
+    write_datasets(datasets)
+    print(f"datasets: {', '.join(datasets)}")
     subprocess.run(["open", INDEX], check=False)
     return 0
 
