@@ -28,6 +28,7 @@ PAGE = """<!DOCTYPE html>
 </head><body><div id="err"></div><pre class="mermaid">__ERD__
 </pre>
 <script>
+mermaid.initialize({ startOnLoad: true, er: { useMaxWidth: true } });
 window.onerror = (msg, src, line) => {{
   const el = document.getElementById("err");
   el.style.display = "block";
