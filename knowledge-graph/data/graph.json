@@ -1,6 +1,6 @@
 {
   "demo": {
-    "generated": "2026-08-12T06:36:30+00:00",
+    "generated": "2026-08-12T07:50:56+00:00",
     "types": {
       "Person": "#38bdf8",
       "Project": "#a78bfa",
@@ -275,7 +275,7 @@
     ]
   },
   "locomo": {
-    "generated": "2026-08-12T06:36:30+00:00",
+    "generated": "2026-08-12T07:50:56+00:00",
     "types": {
       "Person": "#38bdf8",
       "Project": "#a78bfa",

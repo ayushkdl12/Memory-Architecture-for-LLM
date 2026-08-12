@@ -134,18 +134,20 @@ def main() -> int:
 
     with Session(engine) as db:
         if args.reset:
+            # Only ever touch sessions created by this script (exact title
+            # prefix for THIS conv + the demo user). Never subject-matching:
+            # that could delete legit atoms about a similarly-named person.
             dels = db.scalars(select(ChatSession).where(
-                ChatSession.title.like("LoCoMo %"))).all()
+                ChatSession.user_id == uid,
+                ChatSession.title.like(f"LoCoMo {conv} · %"))).all()
             for s in dels:
-                db.delete(s)
-            for sp in (sp_a, sp_b):
                 for a in db.scalars(select(MemoryAtom).where(
-                        MemoryAtom.user_id == uid,
-                        MemoryAtom.subject == sp)).all():
+                        MemoryAtom.session_id == s.session_id)).all():
                     db.delete(a)
+                db.delete(s)
             db.commit()
-            print(f"[reset] removed {len(dels)} prior LoCoMo sessions and "
-                  "related atoms")
+            print(f"[reset] removed {len(dels)} prior {conv} sessions and "
+                  "their atoms")
 
     created_total = 0
     msg_total = 0
