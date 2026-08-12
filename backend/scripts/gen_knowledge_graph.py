@@ -43,6 +43,9 @@ LOCOMO_SAMPLE = os.path.join(ROOT, "data", "locomo_sample.json")  # extracted ca
 DATA_JS = os.path.join(ROOT, "knowledge-graph", "js", "data.js")
 GRAPH_JSON = os.path.join(ROOT, "knowledge-graph", "data", "graph.json")
 INDEX = os.path.join(ROOT, "knowledge-graph", "index.html")
+FRONTEND_DIR = os.path.join(ROOT, "frontend", "public", "knowledge-graph")
+FRONTEND_DATA_JS = os.path.join(FRONTEND_DIR, "js", "data.js")
+FRONTEND_GRAPH_JSON = os.path.join(FRONTEND_DIR, "data", "graph.json")
 
 TYPE_COLORS = {
     "Person": "#38bdf8",
@@ -407,6 +410,12 @@ def write_datasets(datasets: dict[str, list[dict]]) -> None:
         f.write("\n".join(lines) + "\n")
     os.makedirs(os.path.dirname(GRAPH_JSON), exist_ok=True)
     with open(GRAPH_JSON, "w") as f:
+        json.dump(payloads, f, indent=2)
+    os.makedirs(os.path.dirname(FRONTEND_DATA_JS), exist_ok=True)
+    with open(FRONTEND_DATA_JS, "w") as f:
+        f.write("\n".join(lines) + "\n")
+    os.makedirs(os.path.dirname(FRONTEND_GRAPH_JSON), exist_ok=True)
+    with open(FRONTEND_GRAPH_JSON, "w") as f:
         json.dump(payloads, f, indent=2)
 
     for name, elements in payloads.items():

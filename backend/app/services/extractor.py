@@ -334,8 +334,13 @@ class MemoryExtractor:
     def _parse_list(self, data: Any) -> list[dict]:
         """Normalize the model output into a clean list of atoms."""
         if isinstance(data, dict):
-            # tolerate {"atoms": [...]}
-            inner = data.get("atoms") or data.get("output") or data.get("memories")
+            # tolerate {"atoms": [...]} and common model variants
+            inner = None
+            for key in ("atoms", "output", "memories", "user_message",
+                        "User message", "facts", "extracted"):
+                if isinstance(data.get(key), list):
+                    inner = data[key]
+                    break
             if inner is not None:
                 data = inner
             else:

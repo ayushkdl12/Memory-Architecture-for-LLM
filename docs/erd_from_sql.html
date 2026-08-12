@@ -1,267 +1,2380 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ERD — memory_db</title>
-<style>
-  body { margin: 0; background: #0b0f1f; color: #e5e7eb;
-         font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
-  header { padding: 16px 24px; border-bottom: 1px solid #273047;
-           display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-  header h1 { margin: 0; font-size: 18px; }
-  header .sub { color: #9ca3af; font-size: 12px; }
-  #toolbar { display: flex; gap: 8px; margin-left: auto; }
-  button { background: #1e2440; color: #dbeafe; border: 1px solid #34406b;
-           border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
-  button:hover { background: #2a3358; }
-  .wrap { padding: 24px; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-          gap: 20px; align-items: start; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  caption { text-align: left; font-weight: 700; font-size: 14px; padding: 0 0 8px;
-            border-bottom: 2px solid; }
-  th, td { text-align: left; padding: 5px 8px; }
-  th { color: #9ca3af; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; }
-  td { border-top: 1px solid #1f2937; }
-  .pk { color: #fbbf24; }
-  .fk { color: #60a5fa; }
-  .t { color: #94a3b8; font-size: 11px; }
-  .r { color: #f87171; }
-  .c { color: #4ade80; }
-  .rel { padding: 10px 24px; font-size: 12px; color: #cbd5e1; background: #0f1525;
-         border-top: 1px solid #273047; }
-  .rel b { color: #e5e7eb; }
-  .chip { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 6px; }
-  #err { display: none; background: #fde8e8; color: #7f1d1d; padding: 10px 16px;
-         font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
-</style>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Interactive ER Diagram — Live from schema.sql</title>
+
+    <!-- Cytoscape -->
+    <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+
+
+    <style>
+
+        /* =====================================================
+           GLOBAL
+        ===================================================== */
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+
+            margin: 0;
+
+            font-family:
+                Arial,
+                Helvetica,
+                sans-serif;
+
+            background: #020617;
+
+            color: white;
+
+            overflow: hidden;
+        }
+
+
+        /* =====================================================
+           APPLICATION
+        ===================================================== */
+
+        .app {
+
+            display: flex;
+
+            width: 100vw;
+
+            height: 100vh;
+        }
+
+
+        /* =====================================================
+           SIDEBAR
+        ===================================================== */
+
+        .sidebar {
+
+            width: 280px;
+
+            min-width: 280px;
+
+            background: #111827;
+
+            border-right:
+                1px solid #334155;
+
+            padding: 20px;
+
+            overflow-y: auto;
+
+            display: flex;
+
+            flex-direction: column;
+        }
+
+
+        .logo {
+
+            font-size: 22px;
+
+            font-weight: bold;
+
+            margin-bottom: 20px;
+        }
+
+
+        .logo span {
+
+            color: #38bdf8;
+        }
+
+        .logo .sub {
+
+            font-size: 11px;
+
+            color: #64748b;
+
+            font-weight: normal;
+
+            display: block;
+
+            margin-top: 2px;
+        }
+
+
+        /* =====================================================
+           SEARCH
+        ===================================================== */
+
+        .search {
+
+            width: 100%;
+
+            padding: 12px;
+
+            border-radius: 8px;
+
+            border:
+                1px solid #475569;
+
+            background: #1e293b;
+
+            color: white;
+
+            outline: none;
+
+            margin-bottom: 12px;
+        }
+
+
+        .search:focus {
+
+            border-color: #38bdf8;
+        }
+
+
+        /* =====================================================
+           BUTTONS
+        ===================================================== */
+
+        .btn {
+
+            width: 100%;
+
+            padding: 10px;
+
+            margin-bottom: 6px;
+
+            border: none;
+
+            border-radius: 7px;
+
+            background: #1e293b;
+
+            color: white;
+
+            cursor: pointer;
+
+            text-align: left;
+
+            font-size: 13px;
+        }
+
+
+        .btn:hover {
+
+            background: #334155;
+        }
+
+
+        .btn.active {
+
+            background: #0284c7;
+        }
+
+
+        .section-label {
+
+            font-size: 10px;
+
+            color: #64748b;
+
+            text-transform: uppercase;
+
+            letter-spacing: 0.08em;
+
+            margin: 12px 0 4px;
+        }
+
+
+        #tableList {
+
+            flex: 1;
+
+            overflow-y: auto;
+        }
+
+
+        /* =====================================================
+           TABS (SQL / Diagram toggle)
+        ===================================================== */
+
+        .view-tabs {
+
+            display: flex;
+
+            gap: 0;
+
+            margin-bottom: 12px;
+        }
+
+
+        .view-tab {
+
+            flex: 1;
+
+            padding: 8px;
+
+            border: 1px solid #475569;
+
+            background: #1e293b;
+
+            color: #94a3b8;
+
+            cursor: pointer;
+
+            text-align: center;
+
+            font-size: 12px;
+
+            font-weight: bold;
+        }
+
+
+        .view-tab:first-child {
+
+            border-radius: 7px 0 0 7px;
+        }
+
+
+        .view-tab:last-child {
+
+            border-radius: 0 7px 7px 0;
+        }
+
+
+        .view-tab.active {
+
+            background: #0284c7;
+
+            color: white;
+
+            border-color: #0284c7;
+        }
+
+
+        /* =====================================================
+           MAIN
+        ===================================================== */
+
+        .main {
+
+            flex: 1;
+
+            position: relative;
+
+            display: flex;
+
+            flex-direction: column;
+        }
+
+
+        /* =====================================================
+           SQL PANEL
+        ===================================================== */
+
+        .sql-panel {
+
+            position: absolute;
+
+            inset: 0;
+
+            display: none;
+
+            flex-direction: column;
+
+            z-index: 5;
+        }
+
+
+        .sql-panel.visible {
+
+            display: flex;
+        }
+
+
+        .sql-toolbar {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            padding: 12px 20px;
+
+            background: #111827;
+
+            border-bottom: 1px solid #334155;
+        }
+
+
+        .sql-toolbar .label {
+
+            font-weight: bold;
+
+            font-size: 14px;
+
+            color: #38bdf8;
+        }
+
+
+        .sql-toolbar .sub {
+
+            font-size: 12px;
+
+            color: #64748b;
+        }
+
+
+        .sql-toolbar .spacer {
+
+            flex: 1;
+        }
+
+
+        .parse-btn {
+
+            padding: 8px 20px;
+
+            border: none;
+
+            border-radius: 7px;
+
+            background: #22c55e;
+
+            color: #020617;
+
+            font-weight: bold;
+
+            cursor: pointer;
+
+            font-size: 13px;
+        }
+
+
+        .parse-btn:hover {
+
+            background: #16a34a;
+        }
+
+
+        .sql-editor {
+
+            flex: 1;
+
+            width: 100%;
+
+            resize: none;
+
+            padding: 20px;
+
+            background: #0f172a;
+
+            color: #e2e8f0;
+
+            border: none;
+
+            outline: none;
+
+            font-family:
+                'SF Mono',
+                'Fira Code',
+                'Cascadia Code',
+                Consolas,
+                monospace;
+
+            font-size: 13px;
+
+            line-height: 1.6;
+
+            tab-size: 4;
+        }
+
+
+        /* =====================================================
+           GRAPH PANEL
+        ===================================================== */
+
+        .graph-panel {
+
+            position: absolute;
+
+            inset: 0;
+
+            display: none;
+        }
+
+
+        .graph-panel.visible {
+
+            display: block;
+        }
+
+
+        #cy {
+
+            position: absolute;
+
+            inset: 0;
+        }
+
+
+        /* =====================================================
+           TOP BAR (graph view)
+        ===================================================== */
+
+        .topbar {
+
+            position: absolute;
+
+            top: 20px;
+
+            left: 20px;
+
+            right: 20px;
+
+            z-index: 20;
+
+            display: flex;
+
+            justify-content:
+                space-between;
+
+            align-items: center;
+
+            pointer-events: none;
+        }
+
+
+        .topbar > * {
+
+            pointer-events: auto;
+        }
+
+
+        .title {
+
+            background:
+                rgba(15, 23, 42, .95);
+
+            border:
+                1px solid #334155;
+
+            border-radius: 8px;
+
+            padding: 12px 18px;
+
+            font-weight: bold;
+        }
+
+
+        .title .sub {
+
+            font-size: 12px;
+
+            color: #94a3b8;
+
+            font-weight: normal;
+        }
+
+
+        .controls {
+
+            display: flex;
+
+            gap: 8px;
+        }
+
+
+        .control {
+
+            background: #1e293b;
+
+            color: white;
+
+            border:
+                1px solid #475569;
+
+            padding:
+                10px 14px;
+
+            border-radius: 7px;
+
+            cursor: pointer;
+        }
+
+
+        .control:hover {
+
+            background: #334155;
+        }
+
+
+        /* =====================================================
+           INFORMATION PANEL
+        ===================================================== */
+
+        .info {
+
+            position: absolute;
+
+            right: 20px;
+
+            bottom: 20px;
+
+            width: 360px;
+
+            max-height: 55vh;
+
+            overflow-y: auto;
+
+            background:
+                rgba(15, 23, 42, .97);
+
+            border:
+                1px solid #334155;
+
+            border-radius: 10px;
+
+            padding: 20px;
+
+            z-index: 20;
+
+            display: none;
+        }
+
+
+        .info h2 {
+
+            color: #38bdf8;
+
+            margin-top: 0;
+        }
+
+
+        .column-row {
+
+            padding: 5px 0;
+
+            border-bottom:
+                1px solid #1e293b;
+
+            font-size: 13px;
+        }
+
+
+        .pk {
+
+            color: #facc15;
+
+            font-weight: bold;
+        }
+
+
+        .fk {
+
+            color: #f472b6;
+
+            font-weight: bold;
+        }
+
+
+        .col-type {
+
+            color: #94a3b8;
+
+            font-size: 12px;
+        }
+
+
+        .ref-tag {
+
+            color: #60a5fa;
+
+            font-size: 11px;
+        }
+
+
+        .nullable-tag {
+
+            color: #64748b;
+
+            font-size: 10px;
+        }
+
+
+        /* =====================================================
+           LEGEND
+        ===================================================== */
+
+        .legend {
+
+            position: absolute;
+
+            left: 20px;
+
+            bottom: 20px;
+
+            background:
+                rgba(15, 23, 42, .95);
+
+            border:
+                1px solid #334155;
+
+            border-radius: 8px;
+
+            padding: 15px;
+
+            z-index: 20;
+
+            font-size: 13px;
+        }
+
+
+        .legend-item {
+
+            margin-bottom: 5px;
+        }
+
+
+        .legend-swatch {
+
+            display: inline-block;
+
+            width: 12px;
+
+            height: 12px;
+
+            border-radius: 3px;
+
+            margin-right: 6px;
+
+            vertical-align: middle;
+        }
+
+
+        /* =====================================================
+           STATS FOOTER
+        ===================================================== */
+
+        .stats-box {
+
+            margin-top: auto;
+
+            padding-top: 16px;
+
+            border-top: 1px solid #334155;
+        }
+
+        .stats-box strong {
+
+            font-size: 13px;
+        }
+
+        .stats-box p {
+
+            font-size: 12px;
+
+            color: #94a3b8;
+
+            line-height: 1.6;
+        }
+
+
+        /* =====================================================
+           PARSE LOG
+        ===================================================== */
+
+        .parse-log {
+
+            position: absolute;
+
+            top: 80px;
+
+            right: 20px;
+
+            max-width: 340px;
+
+            background: rgba(15,23,42,.95);
+
+            border: 1px solid #334155;
+
+            border-radius: 8px;
+
+            padding: 14px;
+
+            z-index: 25;
+
+            font-size: 12px;
+
+            color: #94a3b8;
+
+            display: none;
+        }
+
+
+        .parse-log.visible {
+
+            display: block;
+        }
+
+
+        .parse-log h4 {
+
+            margin: 0 0 8px;
+
+            color: #22c55e;
+
+            font-size: 13px;
+        }
+
+
+        .parse-log .item {
+
+            margin-bottom: 3px;
+        }
+
+
+        .parse-log .count {
+
+            color: #38bdf8;
+
+            font-weight: bold;
+        }
+
+    </style>
+
 </head>
+
+
 <body>
-<div id="err"></div>
-<header>
-  <h1>memory_db — ER Diagram</h1>
-  <span class="sub">compiled from <code>db/schema.sql</code> · 12 tables · PK = primary key · FK = foreign key · Cardinality: <b>1</b> to <b>N</b></span>
-  <div id="toolbar">
-    <button onclick="window.print()">Print / Save PDF</button>
-  </div>
-</header>
-<div class="wrap">
-  <div>
-    <table>
-      <caption style="border-color:#3b82f6"><span class="chip" style="background:#3b82f6"></span>users</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">user_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td>name</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-    <div class="rel">
-      <span class="c">1</span> ─── <b>chat_sessions.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>memory_atoms.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>fact_versions.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>media.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>user_settings.user_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>documents.user_id</b> <span class="r">ON DELETE CASCADE</span>
-    </div>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#22c55e"><span class="chip" style="background:#22c55e"></span>chat_sessions</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">session_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
-        <tr><td>title</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-        <tr><td>updated_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-    <div class="rel">
-      <span class="c">1</span> ─── <b>messages.session_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>memory_atoms.session_id</b> <span class="r">ON DELETE SET NULL</span><br>
-      <span class="c">1</span> ─── <b>retrieval_logs.session_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>search_logs.session_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>media.session_id</b> <span class="r">ON DELETE SET NULL</span><br>
-      <span class="c">1</span> ─── <b>documents.session_id</b> <span class="r">ON DELETE SET NULL</span>
-    </div>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#22c55e"><span class="chip" style="background:#22c55e"></span>messages</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">message_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
-        <tr><td>role</td><td class="t">message_role</td><td></td><td></td></tr>
-        <tr><td>content</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-    <div class="rel">
-      <span class="c">1</span> ─── <b>memory_atoms.source_message_id</b> <span class="r">ON DELETE SET NULL</span><br>
-      <span class="c">1</span> ─── <b>retrieval_logs.message_id</b> <span class="r">ON DELETE SET NULL</span><br>
-      <span class="c">1</span> ─── <b>search_logs.message_id</b> <span class="r">ON DELETE SET NULL</span><br>
-      <span class="c">1</span> ─── <b>media.source_message_id</b> <span class="r">ON DELETE SET NULL</span>
-    </div>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#6366f1"><span class="chip" style="background:#6366f1"></span>memory_atoms</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">memory_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
-        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
-        <tr><td class="fk">source_message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
-        <tr><td>memory_type</td><td class="t">memory_type</td><td></td><td></td></tr>
-        <tr><td>category</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>subject</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>attribute</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>value</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>content</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>priority</td><td class="t">priority_level</td><td></td><td></td></tr>
-        <tr><td>confidence_score</td><td class="t">DOUBLE PRECISION</td><td></td><td></td></tr>
-        <tr><td>is_confirmed</td><td class="t">BOOLEAN</td><td></td><td></td></tr>
-        <tr><td>is_pinned</td><td class="t">BOOLEAN</td><td></td><td></td></tr>
-        <tr><td>is_active</td><td class="t">BOOLEAN</td><td></td><td></td></tr>
-        <tr><td>retention_status</td><td class="t">retention_status</td><td></td><td></td></tr>
-        <tr><td>access_count</td><td class="t">INTEGER</td><td></td><td></td></tr>
-        <tr><td>valid_from</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-        <tr><td>valid_until</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-        <tr><td>expires_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-        <tr><td>updated_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-    <div class="rel">
-      <span class="c">1</span> ─── <b>fact_versions.old_memory_id</b> <span class="r">ON DELETE SET NULL</span><br>
-      <span class="c">1</span> ─── <b>fact_versions.new_memory_id</b> <span class="r">ON DELETE SET NULL</span><br>
-      <span class="c">1</span> ─── <b>retention_logs.memory_id</b> <span class="r">ON DELETE CASCADE</span><br>
-      <span class="c">1</span> ─── <b>media.memory_id</b> <span class="r">ON DELETE SET NULL</span>
-    </div>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#64748b"><span class="chip" style="background:#64748b"></span>fact_versions</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">version_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
-        <tr><td>subject</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>attribute</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td class="fk">old_memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
-        <tr><td class="fk">new_memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
-        <tr><td>changed_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-        <tr><td>change_reason</td><td class="t">TEXT</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#64748b"><span class="chip" style="background:#64748b"></span>retrieval_logs</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">retrieval_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
-        <tr><td class="fk">message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
-        <tr><td>query_text</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>retrieved_memory_ids</td><td class="t">JSONB</td><td></td><td></td></tr>
-        <tr><td>retrieval_reason</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#64748b"><span class="chip" style="background:#64748b"></span>retention_logs</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">retention_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
-        <tr><td>action</td><td class="t">retention_action</td><td></td><td></td></tr>
-        <tr><td>reason</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>score</td><td class="t">DOUBLE PRECISION</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>media</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">media_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
-        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
-        <tr><td class="fk">source_message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
-        <tr><td class="fk">memory_id</td><td class="t">UUID</td><td class="fk">FK</td><td>memory_atoms(memory_id)</td></tr>
-        <tr><td>filename</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>url</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>mime_type</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>description</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>user_settings</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">user_id</td><td class="t">UUID</td><td class="pk">PK</td><td>users(user_id)</td></tr>
-        <tr><td>custom_instructions</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>updated_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>search_logs</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">search_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
-        <tr><td class="fk">message_id</td><td class="t">UUID</td><td class="fk">FK</td><td>messages(message_id)</td></tr>
-        <tr><td>query_text</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>provider</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>results</td><td class="t">JSONB</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>documents</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">doc_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">user_id</td><td class="t">UUID</td><td class="fk">FK</td><td>users(user_id)</td></tr>
-        <tr><td class="fk">session_id</td><td class="t">UUID</td><td class="fk">FK</td><td>chat_sessions(session_id)</td></tr>
-        <tr><td>filename</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>mime_type</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>char_count</td><td class="t">BIGINT</td><td></td><td></td></tr>
-        <tr><td>preview</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-    <div class="rel">
-      <span class="c">1</span> ─── <b>document_chunks.doc_id</b> <span class="r">ON DELETE CASCADE</span>
-    </div>
-  </div>
-  <div>
-    <table>
-      <caption style="border-color:#a855f7"><span class="chip" style="background:#a855f7"></span>document_chunks</caption>
-      <thead><tr><th>Column</th><th>Type</th><th>Key</th><th>References</th></tr></thead>
-      <tbody>
-        <tr><td class="pk">chunk_id</td><td class="t">UUID</td><td class="pk">PK</td><td></td></tr>
-        <tr><td class="fk">doc_id</td><td class="t">UUID</td><td class="fk">FK</td><td>documents(doc_id)</td></tr>
-        <tr><td>chunk_index</td><td class="t">BIGINT</td><td></td><td></td></tr>
-        <tr><td>text</td><td class="t">TEXT</td><td></td><td></td></tr>
-        <tr><td>created_at</td><td class="t">TIMESTAMPTZ</td><td></td><td></td></tr>
-      </tbody>
-    </table>
-  </div>
+
+
+<div class="app">
+
+
+    <!-- =====================================================
+         SIDEBAR
+    ===================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            ER<span>Diagram</span>
+
+            <span class="sub">
+                Live from PostgreSQL
+            </span>
+
+        </div>
+
+
+        <!-- View toggle -->
+
+        <div class="view-tabs">
+
+            <div
+                class="view-tab active"
+                data-view="diagram"
+                onclick="switchView('diagram')">
+
+                📊 Diagram
+
+            </div>
+
+            <div
+                class="view-tab"
+                data-view="sql"
+                onclick="switchView('sql')">
+
+                📝 SQL Source
+
+            </div>
+
+        </div>
+
+
+        <input
+            id="search"
+            class="search"
+            placeholder="Search tables..."
+        >
+
+
+        <button
+            class="btn active"
+            data-type="all">
+
+            All Tables
+
+        </button>
+
+
+        <div id="tableList">
+
+            <!-- populated dynamically -->
+
+        </div>
+
+
+        <div class="stats-box">
+
+            <strong>Parse Results</strong>
+
+            <p id="stats">
+
+                Parsing...
+
+            </p>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- =====================================================
+         MAIN AREA
+    ===================================================== -->
+
+    <main class="main">
+
+
+        <!-- =================================================
+             SQL PANEL
+        ================================================== -->
+
+        <div class="sql-panel" id="sqlPanel">
+
+            <div class="sql-toolbar">
+
+                <span class="label">
+                    db/schema.sql
+                </span>
+
+                <span class="sub">
+                    Edit below, then re-parse →
+                </span>
+
+                <span class="spacer"></span>
+
+                <button
+                    class="parse-btn"
+                    onclick="reParse()">
+
+                    ▶ Re-parse & Build Diagram
+
+                </button>
+
+            </div>
+
+            <textarea
+                id="sqlEditor"
+                class="sql-editor"
+                spellcheck="false"
+            ></textarea>
+
+        </div>
+
+
+        <!-- =================================================
+             GRAPH PANEL
+        ================================================== -->
+
+        <div class="graph-panel visible" id="graphPanel">
+
+
+            <div class="topbar">
+
+                <div class="title">
+
+                    memory_db — ER Diagram
+
+                    <div class="sub">
+                        live-parsed from db/schema.sql
+                    </div>
+
+                </div>
+
+
+                <div class="controls">
+
+                    <button
+                        class="control"
+                        onclick="zoomIn()">
+
+                        +
+
+                    </button>
+
+
+                    <button
+                        class="control"
+                        onclick="zoomOut()">
+
+                        −
+
+                    </button>
+
+
+                    <button
+                        class="control"
+                        onclick="fitGraph()">
+
+                        Fit
+
+                    </button>
+
+
+                    <button
+                        class="control"
+                        onclick="resetGraph()">
+
+                        Reset
+
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <div id="cy"></div>
+
+
+            <!-- Legend -->
+
+            <div class="legend">
+
+                <div class="legend-item">
+
+                    🔑 Primary Key
+
+                </div>
+
+                <div class="legend-item">
+
+                    🔗 Foreign Key
+
+                </div>
+
+                <div class="legend-item">
+
+                    ─── Relationship (FK)
+
+                </div>
+
+                <div style="margin-top:8px; border-top:1px solid #334155; padding-top:6px;">
+
+                    <div class="legend-item">
+                        <span class="legend-swatch" style="background:#3b82f6"></span>Identity
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-swatch" style="background:#22c55e"></span>Conversation
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-swatch" style="background:#6366f1"></span>Core Memory
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-swatch" style="background:#64748b"></span>Versioning
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-swatch" style="background:#f59e0b"></span>Audit / Logs
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-swatch" style="background:#a855f7"></span>Media & Docs
+                    </div>
+
+                    <div class="legend-item">
+                        <span class="legend-swatch" style="background:#ec4899"></span>Settings
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- Info panel -->
+
+            <div
+                class="info"
+                id="info">
+
+                <h2 id="tableName">
+                    Table
+                </h2>
+
+                <div id="tableColumns"></div>
+
+            </div>
+
+
+            <!-- Parse log -->
+
+            <div class="parse-log" id="parseLog">
+
+                <h4>✅ Parse Complete</h4>
+
+                <div id="parseLogContent"></div>
+
+            </div>
+
+        </div>
+
+    </main>
+
 </div>
+
+
+
+<!-- ============================================================
+     RAW SQL — embedded from db/schema.sql
+============================================================ -->
+
+<script id="rawSQL" type="text/plain">
+-- ============================================================================
+-- Memory Architecture for LLM Agents
+-- PostgreSQL Schema (v1.1)
+--
+-- Implements: structured memory atoms, temporal fact versioning, selective
+-- retention, retrieval/retention audit, media, custom instructions, web
+-- search logging, document RAG, and user-set atom expiry. 12 relational
+-- tables + enums + indexes.
+--
+-- Source: "A Memory Architecture for LLM with Temporal Fact Tracking and
+--         Selective Retention" (Major Project Proposal, July 2026).
+--
+-- Demo data: see seed.sql (same directory, run after this file).
+-- ============================================================================
+
+BEGIN;
+
+-- ----------------------------------------------------------------------------
+-- Extensions
+-- ----------------------------------------------------------------------------
+CREATE EXTENSION IF NOT EXISTS pgcrypto;      -- gen_random_uuid()
+CREATE EXTENSION IF NOT EXISTS pg_trgm;       -- trigram index on text search
+
+-- ----------------------------------------------------------------------------
+-- ENUM types
+-- ----------------------------------------------------------------------------
+CREATE TYPE memory_type AS ENUM (
+    'FACT', 'PREFERENCE', 'GOAL', 'RULE', 'EVENT'
+);
+
+CREATE TYPE priority_level AS ENUM (
+    'CRITICAL', 'HIGH', 'MEDIUM', 'LOW'
+);
+
+CREATE TYPE retention_status AS ENUM (
+    'ACTIVE', 'ARCHIVED', 'IGNORED'
+);
+
+CREATE TYPE message_role AS ENUM (
+    'user', 'assistant'
+);
+
+CREATE TYPE retention_action AS ENUM (
+    'KEEP', 'ARCHIVE', 'IGNORE', 'UPDATE'
+);
+
+-- ----------------------------------------------------------------------------
+-- Table: users
+-- ----------------------------------------------------------------------------
+CREATE TABLE users (
+    user_id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name        TEXT NOT NULL DEFAULT '',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE users IS 'Agent/client that owns memory atoms.';
+
+-- ----------------------------------------------------------------------------
+-- Table: chat_sessions
+-- ----------------------------------------------------------------------------
+CREATE TABLE chat_sessions (
+    session_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id     UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    title       TEXT NOT NULL DEFAULT 'New chat',
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_sessions_user   ON chat_sessions(user_id);
+CREATE INDEX idx_sessions_updated ON chat_sessions(updated_at DESC);
+
+COMMENT ON TABLE chat_sessions IS 'A multi-turn conversation for a user.';
+
+-- ----------------------------------------------------------------------------
+-- Table: messages
+-- ----------------------------------------------------------------------------
+CREATE TABLE messages (
+    message_id  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id  UUID NOT NULL REFERENCES chat_sessions(session_id) ON DELETE CASCADE,
+    role        message_role NOT NULL,
+    content     TEXT NOT NULL,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_messages_session ON messages(session_id, created_at);
+
+COMMENT ON TABLE messages IS 'Raw interaction log; the source for memory extraction.';
+
+-- ----------------------------------------------------------------------------
+-- Table: memory_atoms  (the core structured memory store)
+-- ----------------------------------------------------------------------------
+CREATE TABLE memory_atoms (
+    memory_id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id             UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    session_id          UUID REFERENCES chat_sessions(session_id) ON DELETE SET NULL,
+    source_message_id   UUID REFERENCES messages(message_id) ON DELETE SET NULL,
+
+    memory_type         memory_type NOT NULL,
+    category            TEXT NOT NULL DEFAULT 'general',
+    subject             TEXT NOT NULL,
+    attribute           TEXT NOT NULL,
+    value               TEXT NOT NULL,
+    content             TEXT NOT NULL,            -- natural-language memory text
+
+    priority            priority_level NOT NULL DEFAULT 'MEDIUM',
+    confidence_score    DOUBLE PRECISION NOT NULL DEFAULT 0.5
+                        CHECK (confidence_score >= 0.0 AND confidence_score <= 1.0),
+    is_confirmed        BOOLEAN NOT NULL DEFAULT TRUE,   -- auto-confirmed when confidence >= threshold
+    is_pinned           BOOLEAN NOT NULL DEFAULT FALSE,  -- user-pinned; never swept/archived
+
+    is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+    retention_status    retention_status NOT NULL DEFAULT 'ACTIVE',
+    access_count        INTEGER NOT NULL DEFAULT 0,   -- retrieval frequency (scoring)
+
+    valid_from          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    valid_until         TIMESTAMPTZ,               -- NULL == currently active
+    expires_at          TIMESTAMPTZ,               -- user-set expiry; atom auto-archived after this
+
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX uq_memory_active_subject_attribute
+    ON memory_atoms (user_id, subject, attribute)
+    WHERE is_active = TRUE
+      AND memory_type IN ('FACT', 'PREFERENCE', 'GOAL');
+
+CREATE INDEX idx_memory_user        ON memory_atoms(user_id);
+CREATE INDEX idx_memory_session     ON memory_atoms(session_id);
+CREATE INDEX idx_memory_source_msg  ON memory_atoms(source_message_id);
+CREATE INDEX idx_memory_active      ON memory_atoms(is_active, valid_until)
+    WHERE is_active;
+CREATE INDEX idx_memory_type_prio   ON memory_atoms(memory_type, priority);
+CREATE INDEX idx_memory_subject     ON memory_atoms(subject, attribute);
+CREATE INDEX idx_memory_expires     ON memory_atoms(expires_at);
+CREATE INDEX idx_memory_content_trgm ON memory_atoms
+    USING gin (content gin_trgm_ops);
+
+COMMENT ON TABLE memory_atoms IS
+    'Structured memory atoms. Each atom is a versioned (subject, attribute) fact.';
+
+-- ----------------------------------------------------------------------------
+-- Table: fact_versions
+-- ----------------------------------------------------------------------------
+CREATE TABLE fact_versions (
+    version_id      UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    subject         TEXT NOT NULL,
+    attribute       TEXT NOT NULL,
+    old_memory_id   UUID REFERENCES memory_atoms(memory_id) ON DELETE SET NULL,
+    new_memory_id   UUID REFERENCES memory_atoms(memory_id) ON DELETE SET NULL,
+    changed_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    change_reason   TEXT
+);
+
+CREATE INDEX idx_fact_versions_user ON fact_versions(user_id);
+CREATE INDEX idx_fact_versions_subj ON fact_versions(subject, attribute);
+
+COMMENT ON TABLE fact_versions IS
+    'Temporal change log: records when an active fact was superseded.';
+
+-- ----------------------------------------------------------------------------
+-- Table: retrieval_logs
+-- ----------------------------------------------------------------------------
+CREATE TABLE retrieval_logs (
+    retrieval_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id          UUID REFERENCES chat_sessions(session_id) ON DELETE CASCADE,
+    message_id          UUID REFERENCES messages(message_id) ON DELETE SET NULL,
+    query_text          TEXT NOT NULL,
+    retrieved_memory_ids JSONB NOT NULL DEFAULT '[]',
+    retrieval_reason    TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_retrieval_logs_session ON retrieval_logs(session_id, created_at);
+
+COMMENT ON TABLE retrieval_logs IS 'Audit trail of every retrieval event.';
+
+-- ----------------------------------------------------------------------------
+-- Table: retention_logs
+-- ----------------------------------------------------------------------------
+CREATE TABLE retention_logs (
+    retention_id    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    memory_id       UUID REFERENCES memory_atoms(memory_id) ON DELETE CASCADE,
+    action          retention_action NOT NULL,
+    reason          TEXT,
+    score           DOUBLE PRECISION,             -- numeric retention score at decision time
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_retention_logs_memory ON retention_logs(memory_id);
+CREATE INDEX idx_retention_logs_created ON retention_logs(created_at);
+
+COMMENT ON TABLE retention_logs IS 'Audit trail of every retention decision.';
+
+-- ----------------------------------------------------------------------------
+-- Table: media (photo uploads)
+-- ----------------------------------------------------------------------------
+CREATE TABLE media (
+    media_id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id          UUID REFERENCES users(user_id) ON DELETE CASCADE NOT NULL,
+    session_id       UUID REFERENCES chat_sessions(session_id) ON DELETE SET NULL,
+    source_message_id UUID REFERENCES messages(message_id) ON DELETE SET NULL,
+    memory_id        UUID REFERENCES memory_atoms(memory_id) ON DELETE SET NULL,
+    filename         TEXT NOT NULL,               -- on-disk name under uploads/
+    url              TEXT NOT NULL,               -- /media/<filename>
+    mime_type        TEXT NOT NULL,
+    description      TEXT NOT NULL DEFAULT '',    -- vision caption (also the atom value)
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_media_user ON media(user_id);
+CREATE INDEX idx_media_session ON media(session_id);
+CREATE INDEX idx_media_memory ON media(memory_id);
+
+COMMENT ON TABLE media IS 'Uploaded photos with their vision captions.';
+
+-- ----------------------------------------------------------------------------
+-- Table: user_settings
+-- ----------------------------------------------------------------------------
+CREATE TABLE user_settings (
+    user_id             UUID PRIMARY KEY REFERENCES users(user_id) ON DELETE CASCADE,
+    custom_instructions TEXT NOT NULL DEFAULT '',
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+COMMENT ON TABLE user_settings IS
+    'Per-user custom instructions injected into the system prompt.';
+
+-- ----------------------------------------------------------------------------
+-- Table: search_logs
+-- ----------------------------------------------------------------------------
+CREATE TABLE search_logs (
+    search_id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    session_id      UUID REFERENCES chat_sessions(session_id) ON DELETE CASCADE,
+    message_id      UUID REFERENCES messages(message_id) ON DELETE SET NULL,
+    query_text      TEXT NOT NULL,
+    provider        TEXT NOT NULL DEFAULT 'duckduckgo',
+    results         JSONB NOT NULL DEFAULT '[]',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_search_logs_session ON search_logs(session_id, created_at);
+
+COMMENT ON TABLE search_logs IS 'Audit trail of every web search the agent runs.';
+
+-- ----------------------------------------------------------------------------
+-- Table: documents
+-- ----------------------------------------------------------------------------
+CREATE TABLE documents (
+    doc_id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id         UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    session_id      UUID REFERENCES chat_sessions(session_id) ON DELETE SET NULL,
+    filename        TEXT NOT NULL,
+    mime_type       TEXT NOT NULL,
+    char_count      BIGINT NOT NULL DEFAULT 0,
+    preview         TEXT NOT NULL DEFAULT '',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX idx_documents_user ON documents(user_id);
+CREATE INDEX idx_documents_session ON documents(session_id);
+
+COMMENT ON TABLE documents IS 'Uploaded documents, stored as text for RAG.';
+
+-- ----------------------------------------------------------------------------
+-- Table: document_chunks
+-- ----------------------------------------------------------------------------
+CREATE TABLE document_chunks (
+    chunk_id        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    doc_id          UUID NOT NULL REFERENCES documents(doc_id) ON DELETE CASCADE,
+    chunk_index     BIGINT NOT NULL,
+    text            TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE UNIQUE INDEX uq_document_chunk_idx ON document_chunks(doc_id, chunk_index);
+
+COMMENT ON TABLE document_chunks IS
+    'Text chunks of uploaded documents; each is embedded in the vector store as "doc:<chunk_id>".';
+
+-- ----------------------------------------------------------------------------
+-- Triggers
+-- ----------------------------------------------------------------------------
+
+-- Keep updated_at fresh on any UPDATE of a row.
+CREATE OR REPLACE FUNCTION fn_set_updated_at() RETURNS trigger AS $$
+BEGIN
+    NEW.updated_at = now();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_memory_atoms_updated
+    BEFORE UPDATE ON memory_atoms
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_sessions_updated
+    BEFORE UPDATE ON chat_sessions
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+CREATE TRIGGER trg_user_settings_updated
+    BEFORE UPDATE ON user_settings
+    FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+-- ----------------------------------------------------------------------------
+-- View: current (active) memory atoms
+-- Convenience view mirroring the retrieval filter
+-- (is_active = TRUE AND valid_until IS NULL).
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE VIEW active_memory_atoms AS
+SELECT * FROM memory_atoms
+WHERE is_active = TRUE AND valid_until IS NULL;
+
+COMMIT;
+</script>
+
+
+
+<script>
+
+
+/* ============================================================
+   COLOR MAP — assigns colors based on table name patterns
+============================================================ */
+
+
+const TABLE_COLORS = {
+
+    /* identity */
+    "users":            "#3b82f6",
+
+    /* conversation */
+    "chat_sessions":    "#22c55e",
+    "messages":         "#22c55e",
+
+    /* core memory */
+    "memory_atoms":     "#6366f1",
+
+    /* versioning */
+    "fact_versions":    "#64748b",
+
+    /* audit */
+    "retrieval_logs":   "#f59e0b",
+    "retention_logs":   "#f59e0b",
+    "search_logs":      "#f59e0b",
+
+    /* media & docs */
+    "media":            "#a855f7",
+    "documents":        "#a855f7",
+    "document_chunks":  "#a855f7",
+
+    /* settings */
+    "user_settings":    "#ec4899"
+};
+
+
+function getColor(tableName) {
+
+    return TABLE_COLORS[tableName] || "#38bdf8";
+}
+
+
+
+/* ============================================================
+   SQL PARSER — extracts tables, columns, PKs, FKs, ENUMs,
+   indexes, triggers from raw PostgreSQL DDL
+============================================================ */
+
+
+function parseSQL(sql) {
+
+    const result = {
+        tables:     [],
+        edges:      [],
+        enums:      [],
+        indexes:    0,
+        triggers:   0,
+        views:      0,
+        extensions: 0
+    };
+
+
+    /* ---- count supporting objects ---- */
+
+    const extMatches = sql.match(
+        /CREATE\s+EXTENSION/gi
+    );
+    result.extensions = extMatches
+        ? extMatches.length : 0;
+
+    const idxMatches = sql.match(
+        /CREATE\s+(UNIQUE\s+)?INDEX/gi
+    );
+    result.indexes = idxMatches
+        ? idxMatches.length : 0;
+
+    const trgMatches = sql.match(
+        /CREATE\s+TRIGGER/gi
+    );
+    result.triggers = trgMatches
+        ? trgMatches.length : 0;
+
+    const viewMatches = sql.match(
+        /CREATE\s+(OR\s+REPLACE\s+)?VIEW/gi
+    );
+    result.views = viewMatches
+        ? viewMatches.length : 0;
+
+
+    /* ---- parse ENUMs ---- */
+
+    const enumRe =
+        /CREATE\s+TYPE\s+(\w+)\s+AS\s+ENUM\s*\(([\s\S]*?)\)/gi;
+
+    let em;
+
+    while ((em = enumRe.exec(sql)) !== null) {
+
+        const name = em[1];
+
+        const vals = em[2]
+            .match(/'([^']+)'/g)
+            .map(v => v.replace(/'/g, ""));
+
+        result.enums.push({
+            name,
+            values: vals
+        });
+    }
+
+
+    /* ---- parse CREATE TABLE blocks ---- */
+
+    const tableRe =
+        /CREATE\s+TABLE\s+(\w+)\s*\(([\s\S]*?)\n\);/gi;
+
+    let tm;
+
+    let edgeId = 0;
+
+    while ((tm = tableRe.exec(sql)) !== null) {
+
+        const tableName = tm[1];
+
+        const body = tm[2];
+
+        const columns = [];
+
+        /* Split on commas, but respect parentheses
+           (for CHECK constraints, REFERENCES, etc.) */
+
+        const lines = splitColumnDefs(body);
+
+
+        for (const rawLine of lines) {
+
+            const line = rawLine.trim();
+
+            if (!line || /^\s*$/.test(line)) continue;
+
+            /* Skip CHECK constraints on their own line */
+            if (/^\s*CHECK\s*\(/i.test(line)) continue;
+
+            /* Extract column name */
+            const colMatch = line.match(
+                /^(\w+)\s+(.+)$/s
+            );
+
+            if (!colMatch) continue;
+
+            const colName = colMatch[1];
+
+            /* skip sub-constraints */
+            if (/^(CONSTRAINT|UNIQUE|CHECK|PRIMARY|FOREIGN)/i
+                .test(colName)) continue;
+
+            const rest = colMatch[2];
+
+            /* Determine type (first token or known multi-word type) */
+            const typeMatch = rest.match(
+                /^(DOUBLE\s+PRECISION|TIMESTAMPTZ|TIMESTAMP|BIGINT|INTEGER|INT|UUID|TEXT|BOOLEAN|JSONB|JSON|SMALLINT|SERIAL|BIGSERIAL|VARCHAR\(\d+\)|CHAR\(\d+\)|\w+)/i
+            );
+
+            const colType = typeMatch
+                ? typeMatch[1].toUpperCase()
+                    .replace(/\s+/g, " ")
+                : "TEXT";
+
+
+            /* PK? */
+            const isPK =
+                /PRIMARY\s+KEY/i.test(rest);
+
+
+            /* FK? (REFERENCES) */
+            const fkMatch = rest.match(
+                /REFERENCES\s+(\w+)\s*\(\s*(\w+)\s*\)/i
+            );
+
+            const isFK = !!fkMatch;
+
+            let refTable = "";
+            let refCol = "";
+            let onDelete = "";
+
+            if (fkMatch) {
+
+                refTable = fkMatch[1];
+                refCol = fkMatch[2];
+
+                const odMatch = rest.match(
+                    /ON\s+DELETE\s+(CASCADE|SET\s+NULL|SET\s+DEFAULT|RESTRICT|NO\s+ACTION)/i
+                );
+
+                onDelete = odMatch
+                    ? odMatch[1].toUpperCase()
+                    : "";
+
+                /* Create edge */
+                edgeId++;
+
+                result.edges.push({
+                    data: {
+                        id: "e" + edgeId,
+                        source: refTable,
+                        target: tableName,
+                        label: isPK ? "1 : 1" : "1 : N",
+                        fkCol: colName,
+                        onDelete: onDelete
+                    }
+                });
+            }
+
+
+            /* Nullable? */
+            const isNotNull =
+                /NOT\s+NULL/i.test(rest);
+
+            const nullable =
+                isPK ? false : !isNotNull;
+
+
+            columns.push({
+                name: colName,
+                type: colType,
+                pk: isPK,
+                fk: isFK,
+                ref: isFK
+                    ? refTable + "(" + refCol + ")"
+                    : "",
+                nullable: nullable
+            });
+        }
+
+
+        result.tables.push({
+            data: {
+                id: tableName,
+                label: tableName.toUpperCase(),
+                type: tableName,
+                color: getColor(tableName),
+                columns: columns
+            }
+        });
+
+    }
+
+    return result;
+}
+
+
+/* Split column definitions, respecting nested parentheses */
+
+function splitColumnDefs(body) {
+
+    const parts = [];
+
+    let depth = 0;
+
+    let current = "";
+
+    for (let i = 0; i < body.length; i++) {
+
+        const ch = body[i];
+
+        if (ch === "(") depth++;
+
+        else if (ch === ")") depth--;
+
+        if (ch === "," && depth === 0) {
+
+            parts.push(current);
+
+            current = "";
+
+        } else {
+
+            current += ch;
+
+        }
+
+    }
+
+    if (current.trim()) parts.push(current);
+
+    return parts;
+}
+
+
+
+/* ============================================================
+   CYTOSCAPE INSTANCE
+============================================================ */
+
+
+let cy = null;
+
+
+function buildGraph(parsed) {
+
+
+    /* combine nodes + edges */
+
+    const elements = [
+        ...parsed.tables,
+        ...parsed.edges
+    ];
+
+
+    if (cy) {
+        cy.destroy();
+    }
+
+
+    cy = cytoscape({
+
+        container:
+            document.getElementById("cy"),
+
+
+        elements:
+            elements,
+
+
+        style: [
+
+            /* ---- node ---- */
+
+            {
+                selector: "node",
+
+                style: {
+
+                    "shape": "roundrectangle",
+
+                    "background-color": "#1e293b",
+
+                    "border-width": 2,
+
+                    "border-color": "data(color)",
+
+                    "label": "data(label)",
+
+                    "color": "#ffffff",
+
+                    "font-size": 13,
+
+                    "font-weight": "bold",
+
+                    "text-valign": "center",
+
+                    "text-halign": "center",
+
+                    "width": function(ele) {
+                        return Math.max(
+                            150,
+                            ele.data("label").length * 10.5
+                        );
+                    },
+
+                    "height": function(ele) {
+                        var cols =
+                            ele.data("columns") || [];
+                        return Math.max(
+                            50,
+                            18 + cols.length * 5
+                        );
+                    }
+
+                }
+
+            },
+
+
+            /* ---- edge ---- */
+
+            {
+
+                selector: "edge",
+
+                style: {
+
+                    "curve-style": "bezier",
+
+                    "width": 2,
+
+                    "line-color": "#475569",
+
+                    "target-arrow-color": "#475569",
+
+                    "target-arrow-shape": "triangle",
+
+                    "label": "data(label)",
+
+                    "color": "#cbd5e1",
+
+                    "font-size": 10,
+
+                    "text-background-color": "#020617",
+
+                    "text-background-opacity": 1,
+
+                    "text-background-padding": 3,
+
+                    "text-rotation": "autorotate"
+
+                }
+
+            },
+
+
+            /* ---- selected ---- */
+
+            {
+
+                selector: ":selected",
+
+                style: {
+
+                    "border-width": 4,
+
+                    "border-color": "#facc15"
+
+                }
+
+            }
+
+        ],
+
+
+        layout: {
+
+            name: "cose",
+
+            animate: true,
+
+            animationDuration: 800,
+
+            padding: 120,
+
+            nodeRepulsion: 1200000,
+
+            idealEdgeLength: 280,
+
+            edgeElasticity: 200,
+
+            gravity: 0.3,
+
+            numIter: 2000,
+
+            nodeOverlap: 30
+
+        }
+
+    });
+
+
+    /* ---- node click: show columns ---- */
+
+    cy.on(
+        "tap",
+        "node",
+        function(event) {
+
+            const data =
+                event.target.data();
+
+            showInfo(data);
+        }
+    );
+
+
+    /* ---- background click: hide info ---- */
+
+    cy.on(
+        "tap",
+        function(event) {
+
+            if (event.target === cy) {
+
+                document
+                    .getElementById("info")
+                    .style.display = "none";
+            }
+        }
+    );
+
+}
+
+
+
+/* ============================================================
+   SHOW TABLE INFO
+============================================================ */
+
+
+function showInfo(data) {
+
+    document
+        .getElementById("info")
+        .style.display = "block";
+
+    document
+        .getElementById("tableName")
+        .innerText = data.label;
+
+    const container =
+        document.getElementById("tableColumns");
+
+    container.innerHTML = "";
+
+
+    data.columns.forEach(col => {
+
+        const div = document.createElement("div");
+
+        div.className = "column-row";
+
+
+        let icon = "";
+
+        let badge = "";
+
+
+        if (col.pk && col.fk) {
+
+            icon = "🔑🔗 ";
+
+            badge =
+                '<span class="pk">PK</span> ' +
+                '<span class="fk">FK</span> ';
+
+        }
+
+        else if (col.pk) {
+
+            icon = "🔑 ";
+
+            badge = '<span class="pk">PK</span> ';
+
+        }
+
+        else if (col.fk) {
+
+            icon = "🔗 ";
+
+            badge = '<span class="fk">FK</span> ';
+
+        }
+
+
+        let refHtml = "";
+
+        if (col.ref) {
+
+            refHtml =
+                ' <span class="ref-tag">→ ' +
+                col.ref +
+                '</span>';
+        }
+
+
+        let nullHtml = "";
+
+        if (col.nullable && !col.pk) {
+
+            nullHtml =
+                ' <span class="nullable-tag">NULL</span>';
+        }
+
+
+        div.innerHTML =
+            icon + badge +
+            '<strong>' + col.name + '</strong> ' +
+            '<span class="col-type">' + col.type + '</span>' +
+            refHtml + nullHtml;
+
+
+        container.appendChild(div);
+
+    });
+
+}
+
+
+
+/* ============================================================
+   SIDEBAR — dynamically build table buttons
+============================================================ */
+
+
+function buildSidebar(parsed) {
+
+    const list =
+        document.getElementById("tableList");
+
+    list.innerHTML = "";
+
+
+    /* Group tables by color */
+
+    const groups = {};
+
+    parsed.tables.forEach(t => {
+
+        const c = t.data.color;
+
+        if (!groups[c]) groups[c] = [];
+
+        groups[c].push(t.data);
+
+    });
+
+
+    const groupLabels = {
+        "#3b82f6": "Identity",
+        "#22c55e": "Conversation",
+        "#6366f1": "Core Memory",
+        "#64748b": "Versioning",
+        "#f59e0b": "Audit / Logs",
+        "#a855f7": "Media & Docs",
+        "#ec4899": "Settings"
+    };
+
+    const groupOrder = [
+        "#3b82f6", "#22c55e", "#6366f1",
+        "#64748b", "#f59e0b", "#a855f7",
+        "#ec4899"
+    ];
+
+
+    groupOrder.forEach(color => {
+
+        const items = groups[color];
+
+        if (!items) return;
+
+        const label = groupLabels[color] || "Other";
+
+        const lbl = document.createElement("div");
+
+        lbl.className = "section-label";
+
+        lbl.textContent = label;
+
+        list.appendChild(lbl);
+
+
+        items.forEach(tData => {
+
+            const btn =
+                document.createElement("button");
+
+            btn.className = "btn";
+
+            btn.dataset.type = tData.id;
+
+            btn.innerHTML =
+                '<span style="color:' +
+                tData.color +
+                '; margin-right:6px;">●</span>' +
+                tData.id;
+
+            list.appendChild(btn);
+
+        });
+
+    });
+
+
+    /* re-attach filter listeners */
+
+    attachFilterListeners();
+
+}
+
+
+
+/* ============================================================
+   STATISTICS
+============================================================ */
+
+
+function updateStats(parsed) {
+
+    const nodeCount = parsed.tables.length;
+
+    const edgeCount = parsed.edges.length;
+
+    const enumCount = parsed.enums.length;
+
+    document.getElementById("stats").innerHTML =
+
+        'Tables: <strong>' + nodeCount + '</strong><br>' +
+        'Relationships: <strong>' + edgeCount + '</strong><br>' +
+        'ENUMs: <strong>' + enumCount + '</strong><br>' +
+        'Indexes: <strong>' + parsed.indexes + '</strong><br>' +
+        'Triggers: <strong>' + parsed.triggers + '</strong><br>' +
+        'Views: <strong>' + parsed.views + '</strong><br>' +
+        'Extensions: <strong>' + parsed.extensions + '</strong>';
+
+
+    /* Parse log overlay */
+
+    const logEl =
+        document.getElementById("parseLogContent");
+
+    logEl.innerHTML =
+
+        '<div class="item">' +
+        'Extracted <span class="count">' +
+        nodeCount + '</span> tables</div>' +
+
+        '<div class="item">' +
+        'Found <span class="count">' +
+        edgeCount + '</span> FK relationships</div>' +
+
+        '<div class="item">' +
+        'Parsed <span class="count">' +
+        enumCount + '</span> ENUM types: ' +
+        parsed.enums.map(e => e.name).join(", ") +
+        '</div>' +
+
+        '<div class="item">' +
+        'Detected <span class="count">' +
+        parsed.indexes + '</span> indexes, ' +
+        '<span class="count">' +
+        parsed.triggers + '</span> triggers, ' +
+        '<span class="count">' +
+        parsed.views + '</span> views</div>';
+
+
+    const logPanel =
+        document.getElementById("parseLog");
+
+    logPanel.classList.add("visible");
+
+    setTimeout(function() {
+
+        logPanel.classList.remove("visible");
+
+    }, 5000);
+
+}
+
+
+
+/* ============================================================
+   VIEW SWITCHING — SQL ↔ Diagram
+============================================================ */
+
+
+function switchView(view) {
+
+    document.querySelectorAll(".view-tab").forEach(
+        tab => tab.classList.remove("active")
+    );
+
+    document.querySelector(
+        '.view-tab[data-view="' + view + '"]'
+    ).classList.add("active");
+
+    const sqlPanel =
+        document.getElementById("sqlPanel");
+
+    const graphPanel =
+        document.getElementById("graphPanel");
+
+    if (view === "sql") {
+
+        sqlPanel.classList.add("visible");
+
+        graphPanel.classList.remove("visible");
+
+    } else {
+
+        sqlPanel.classList.remove("visible");
+
+        graphPanel.classList.add("visible");
+
+        /* refresh layout after becoming visible */
+        if (cy) {
+
+            setTimeout(function() {
+
+                cy.resize();
+
+                cy.fit(cy.elements(), 100);
+
+            }, 50);
+
+        }
+
+    }
+
+}
+
+
+
+/* ============================================================
+   RE-PARSE — rebuild from edited SQL
+============================================================ */
+
+
+function reParse() {
+
+    const sql =
+        document.getElementById("sqlEditor").value;
+
+    const parsed = parseSQL(sql);
+
+    buildGraph(parsed);
+
+    buildSidebar(parsed);
+
+    updateStats(parsed);
+
+    switchView("diagram");
+
+}
+
+
+
+/* ============================================================
+   SEARCH
+============================================================ */
+
+
+document
+    .getElementById("search")
+    .addEventListener(
+        "input",
+        function() {
+
+            const query =
+                this.value.toLowerCase();
+
+            if (!cy) return;
+
+            cy.nodes().forEach(node => {
+
+                const label =
+                    node.data("label")
+                        .toLowerCase();
+
+                const match =
+                    query === "" ||
+                    label.includes(query);
+
+                node.style("opacity",
+                    match ? 1 : 0.15);
+            });
+
+            cy.edges().forEach(edge => {
+
+                const srcOp =
+                    edge.source()
+                        .style("opacity");
+
+                const tgtOp =
+                    edge.target()
+                        .style("opacity");
+
+                edge.style("opacity",
+                    (srcOp < 0.5 || tgtOp < 0.5)
+                        ? 0.1 : 1);
+            });
+        }
+    );
+
+
+
+/* ============================================================
+   TABLE FILTER
+============================================================ */
+
+
+function attachFilterListeners() {
+
+    document
+        .querySelectorAll(".btn")
+        .forEach(button => {
+
+            button.addEventListener(
+                "click",
+                function() {
+
+                    document
+                        .querySelectorAll(".btn")
+                        .forEach(b =>
+                            b.classList.remove("active")
+                        );
+
+                    this.classList.add("active");
+
+                    const type = this.dataset.type;
+
+                    if (!cy) return;
+
+                    cy.nodes().forEach(node => {
+
+                        const match =
+                            type === "all" ||
+                            node.data("id") === type;
+
+                        node.style("opacity",
+                            match ? 1 : 0.15);
+
+                    });
+
+                    cy.edges().forEach(edge => {
+
+                        const srcOp =
+                            edge.source()
+                                .style("opacity");
+
+                        const tgtOp =
+                            edge.target()
+                                .style("opacity");
+
+                        edge.style("opacity",
+                            (srcOp < 0.5 || tgtOp < 0.5)
+                                ? 0.1 : 1);
+                    });
+                }
+            );
+        });
+}
+
+
+
+/* ============================================================
+   CONTROLS
+============================================================ */
+
+
+function zoomIn() {
+
+    if (cy) cy.zoom(cy.zoom() * 1.2);
+}
+
+
+function zoomOut() {
+
+    if (cy) cy.zoom(cy.zoom() * 0.8);
+}
+
+
+function fitGraph() {
+
+    if (cy) cy.fit(cy.elements(), 100);
+}
+
+
+function resetGraph() {
+
+    if (!cy) return;
+
+    cy.nodes().style("opacity", 1);
+
+    cy.edges().style("opacity", 1);
+
+    document.getElementById("search").value = "";
+
+    document.getElementById("info")
+        .style.display = "none";
+
+    document.querySelectorAll(".btn")
+        .forEach(b => b.classList.remove("active"));
+
+    document.querySelector(
+        '.btn[data-type="all"]'
+    ).classList.add("active");
+
+    cy.fit(cy.elements(), 100);
+}
+
+
+
+/* ============================================================
+   BOOT — parse embedded SQL and build everything
+============================================================ */
+
+
+(function boot() {
+
+    const rawSQL =
+        document.getElementById("rawSQL")
+            .textContent;
+
+    /* Populate the editor */
+    document.getElementById("sqlEditor")
+        .value = rawSQL.trim();
+
+    /* Parse */
+    const parsed = parseSQL(rawSQL);
+
+    /* Build */
+    buildGraph(parsed);
+    buildSidebar(parsed);
+    updateStats(parsed);
+
+})();
+
+
+</script>
+
+
 </body>
+
 </html>

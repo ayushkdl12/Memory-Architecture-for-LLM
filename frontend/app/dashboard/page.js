@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import KnowledgeGraphView from "./KnowledgeGraphView";
 import {
   getSummary,
   getAtoms,
@@ -23,6 +24,7 @@ const TABS = [
   { key: "versions", label: "Fact History" },
   { key: "retrieval", label: "Retrieval Logs" },
   { key: "retention", label: "Retention Logs" },
+  { key: "graph", label: "Knowledge Graph" },
 ];
 
 const TYPES = ["FACT", "PREFERENCE", "GOAL", "RULE", "EVENT"];
@@ -491,6 +493,8 @@ export default function DashboardPage() {
             </table>
           </div>
         )}
+
+        {tab === "graph" && <KnowledgeGraphView />}
       </main>
 
       {(isNew || editingAtom) && (
