@@ -21,10 +21,20 @@ PAGE = """<!DOCTYPE html>
 <style>
   body {{ margin: 0; background: #fff; font-family: ui-sans-serif, system-ui, sans-serif; }}
   #erd {{ max-width: 100%; }}
+  #err {{ display: none; background: #fde8e8; color: #7f1d1d; padding: 10px 16px;
+          font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-</head><body><pre class="mermaid">__ERD__
-</pre></body></html>"""
+</head><body><div id="err"></div><pre class="mermaid">__ERD__
+</pre>
+<script>
+window.onerror = (msg, src, line) => {{
+  const el = document.getElementById("err");
+  el.style.display = "block";
+  el.textContent = "Browser error: " + msg + " (" + (src || "") + ":" + line + ")";
+}};
+</script>
+</body></html>"""
 
 
 def parse() -> tuple[list[str], list[str], list[tuple[str, str, str]]]:
@@ -44,8 +54,8 @@ def parse() -> tuple[list[str], list[str], list[tuple[str, str, str]]]:
                 continue
             col, typ = cm.group(1), cm.group(2)
             rest = cm.group(3)
-            pk = "PROPERTY, PK" if "PRIMARY KEY" in rest else "PROPERTY"
-            cols.append(f"        {typ} {col} {pk}")
+            key = " PK" if "PRIMARY KEY" in rest else ""
+            cols.append(f"        {typ} {col}{key}")
             fkm = re.search(r"REFERENCES (\w+)\((\w+)\)", rest)
             if fkm:
                 rels.append((name, fkm.group(1), fkm.group(2)))
@@ -60,11 +70,11 @@ def main() -> int:
     entities, tables, rels = parse()
     lines = ["erDiagram"]
     for src, dst, col in rels:
-        lines.append(f"    {dst} ||--o{{ {src} : \"{col}\"")
+        lines.append(f"    {dst} ||--o{{ {src} : {col}")
     lines.extend(tables)
     erd = "\n".join(lines)
 
-    html_doc = PAGE.replace("__ERD__", html.escape(erd))
+    html_doc = PAGE.replace("__ERD__", erd)
     out = os.path.join(ROOT, "docs", "erd_from_sql.html")
     with open(out, "w") as f:
         f.write(html_doc)

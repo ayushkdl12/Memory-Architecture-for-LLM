@@ -249,7 +249,7 @@ const network = new vis.Network(container, { nodes, edges }, {
 def build_html(erd: str, kg: dict) -> str:
     out = _TEMPLATE
     out = out.replace("__GENERATED__", html.escape(kg["generated"]))
-    out = out.replace("__ERD__", html.escape(erd))
+    out = out.replace("__ERD__", erd)
     out = out.replace("__N_ATOMS__", str(len(kg["atoms"])))
     out = out.replace("__KG_JSON__", json.dumps(kg))
     out = out.replace("__TYPE_COLORS__", json.dumps(TYPE_COLORS))
