@@ -1,154 +1,138 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>ERD — from db/schema.sql</title>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ERD — from db/schema.sql</title>
 <style>
-  body {{ margin: 0; background: #fff; font-family: ui-sans-serif, system-ui, sans-serif; }}
-  #erd {{ max-width: 100%; }}
-  #err {{ display: none; background: #fde8e8; color: #7f1d1d; padding: 10px 16px;
-          font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }}
+  body { margin: 0; background: #0f1220; color: #e5e7eb;
+         font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  header { padding: 16px 24px; border-bottom: 1px solid #273047;
+           display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 18px; }
+  header .sub { color: #9ca3af; font-size: 12px; }
+  #toolbar { display: flex; gap: 8px; margin-left: auto; }
+  button { background: #1e2440; color: #dbeafe; border: 1px solid #34406b;
+           border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+  button:hover { background: #2a3358; }
+  #erd { height: calc(100vh - 170px); }
+  #legend { padding: 10px 24px; display: flex; gap: 20px; flex-wrap: wrap;
+            align-items: center; font-size: 12px; color: #9ca3af;
+            border-top: 1px solid #273047; }
+  #legend .g { display: inline-flex; align-items: center; gap: 7px; }
+  .chip { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .ln { width: 22px; height: 3px; display: inline-block; }
+  #err { display: none; background: #fde8e8; color: #7f1d1d; padding: 10px 16px;
+         font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
-</head><body><div id="err"></div><pre class="mermaid">erDiagram
-    users ||--o{ chat_sessions : user_id
-    chat_sessions ||--o{ messages : session_id
-    users ||--o{ memory_atoms : user_id
-    chat_sessions ||--o{ memory_atoms : session_id
-    messages ||--o{ memory_atoms : message_id
-    users ||--o{ fact_versions : user_id
-    memory_atoms ||--o{ fact_versions : memory_id
-    memory_atoms ||--o{ fact_versions : memory_id
-    chat_sessions ||--o{ retrieval_logs : session_id
-    messages ||--o{ retrieval_logs : message_id
-    memory_atoms ||--o{ retention_logs : memory_id
-    users ||--o{ media : user_id
-    chat_sessions ||--o{ media : session_id
-    messages ||--o{ media : message_id
-    memory_atoms ||--o{ media : memory_id
-    users ||--o{ user_settings : user_id
-    chat_sessions ||--o{ search_logs : session_id
-    messages ||--o{ search_logs : message_id
-    users ||--o{ documents : user_id
-    chat_sessions ||--o{ documents : session_id
-    documents ||--o{ document_chunks : doc_id
-    users {
-        UUID  user_id PK
-        TEXT  name
-        TIMESTAMPTZ  created_at
-    }
-    chat_sessions {
-        UUID  session_id PK
-        UUID  user_id
-        TEXT  title
-        TIMESTAMPTZ  created_at
-        TIMESTAMPTZ  updated_at
-    }
-    messages {
-        UUID  message_id PK
-        UUID  session_id
-        message_role  role
-        TEXT  content
-        TIMESTAMPTZ  created_at
-    }
-    memory_atoms {
-        UUID  memory_id PK
-        UUID  user_id
-        UUID  session_id
-        UUID  source_message_id
-        memory_type  memory_type
-        TEXT  category
-        TEXT  subject
-        TEXT  attribute
-        TEXT  value
-        TEXT  content
-        priority_level  priority
-        DOUBLE  confidence_score
-        BOOLEAN  is_confirmed
-        BOOLEAN  is_pinned
-        BOOLEAN  is_active
-        retention_status  retention_status
-        INTEGER  access_count
-        TIMESTAMPTZ  valid_from
-        TIMESTAMPTZ valid_until
-        TIMESTAMPTZ expires_at
-        TIMESTAMPTZ  created_at
-        TIMESTAMPTZ  updated_at
-    }
-    fact_versions {
-        UUID  version_id PK
-        UUID  user_id
-        TEXT  subject
-        TEXT  attribute
-        UUID  old_memory_id
-        UUID  new_memory_id
-        TIMESTAMPTZ  changed_at
-        TEXT change_reason
-    }
-    retrieval_logs {
-        UUID  retrieval_id PK
-        UUID  session_id
-        UUID  message_id
-        TEXT  query_text
-        JSONB  retrieved_memory_ids
-        TEXT retrieval_reason
-        TIMESTAMPTZ  created_at
-    }
-    retention_logs {
-        UUID  retention_id PK
-        UUID  memory_id
-        retention_action  action
-        TEXT reason
-        DOUBLE  score
-        TIMESTAMPTZ  created_at
-    }
-    media {
-        UUID  media_id PK
-        UUID  user_id
-        UUID  session_id
-        UUID  source_message_id
-        UUID  memory_id
-        TEXT  filename
-        TEXT  url
-        TEXT  mime_type
-        TEXT  description
-        TIMESTAMPTZ  created_at
-    }
-    user_settings {
-        UUID  user_id PK
-        TEXT  custom_instructions
-        TIMESTAMPTZ  updated_at
-    }
-    search_logs {
-        UUID  search_id PK
-        UUID  session_id
-        UUID  message_id
-        TEXT  query_text
-        TEXT  provider
-        JSONB  results
-        TIMESTAMPTZ  created_at
-    }
-    documents {
-        UUID  doc_id PK
-        UUID  user_id
-        UUID  session_id
-        TEXT  filename
-        TEXT  mime_type
-        BIGINT  char_count
-        TEXT  preview
-        TIMESTAMPTZ  created_at
-    }
-    document_chunks {
-        UUID  chunk_id PK
-        UUID  doc_id
-        BIGINT  chunk_index
-        TEXT  text
-        TIMESTAMPTZ  created_at
-    }
-</pre>
+<script src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+<div id="err"></div>
+<header>
+  <h1>memory_db — ER Diagram</h1>
+  <span class="sub">compiled from <code>db/schema.sql</code> · solid = ON DELETE CASCADE · dashed = ON DELETE SET NULL · double-click a table to expand columns</span>
+  <div id="toolbar">
+    <button onclick="expandAll()">Show all columns</button>
+    <button onclick="collapseAll()">Compact</button>
+    <button onclick="network.fit()">Fit view</button>
+  </div>
+</header>
+<div id="erd"></div>
+<div id="legend">
+  <span class="g"><span class="chip" style="background:#3b82f6"></span>Core / Identity</span>
+  <span class="g"><span class="chip" style="background:#22c55e"></span>Conversation</span>
+  <span class="g"><span class="chip" style="background:#6366f1"></span>Memory hub</span>
+  <span class="g"><span class="chip" style="background:#64748b"></span>Audit</span>
+  <span class="g"><span class="chip" style="background:#a855f7"></span>Feature</span>
+  <span class="g"><span style="background:#fbbf24;border-radius:50%">🔑</span> primary key</span>
+  <span class="g"><span class="ln" style="background:#64748b"></span> FK → N:1 (solid=CASCADE, dashed=SET NULL)</span>
+</div>
 <script>
-mermaid.initialize({ startOnLoad: true, er: { useMaxWidth: true } });
-window.onerror = (msg, src, line) => {{
+const D = {"tables": {"users": {"group": "core", "cols": [{"n": "user_id", "t": "UUID", "pk": true, "fk": null}, {"n": "name", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": []}, "chat_sessions": {"group": "conversation", "cols": [{"n": "session_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "title", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id"]}, "messages": {"group": "conversation", "cols": [{"n": "message_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "role", "t": "message_role", "pk": false, "fk": null}, {"n": "content", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["session_id"]}, "memory_atoms": {"group": "hub", "cols": [{"n": "memory_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "source_message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "memory_type", "t": "memory_type", "pk": false, "fk": null}, {"n": "category", "t": "TEXT", "pk": false, "fk": null}, {"n": "subject", "t": "TEXT", "pk": false, "fk": null}, {"n": "attribute", "t": "TEXT", "pk": false, "fk": null}, {"n": "value", "t": "TEXT", "pk": false, "fk": null}, {"n": "content", "t": "TEXT", "pk": false, "fk": null}, {"n": "priority", "t": "priority_level", "pk": false, "fk": null}, {"n": "confidence_score", "t": "DOUBLE PRECISION", "pk": false, "fk": null}, {"n": "is_confirmed", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "is_pinned", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "is_active", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "retention_status", "t": "retention_status", "pk": false, "fk": null}, {"n": "access_count", "t": "INTEGER", "pk": false, "fk": null}, {"n": "valid_from", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "valid_until", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "expires_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id", "session_id", "source_message_id"]}, "fact_versions": {"group": "audit", "cols": [{"n": "version_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "subject", "t": "TEXT", "pk": false, "fk": null}, {"n": "attribute", "t": "TEXT", "pk": false, "fk": null}, {"n": "old_memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "new_memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "changed_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "change_reason", "t": "TEXT", "pk": false, "fk": null}], "fks": ["user_id", "old_memory_id", "new_memory_id"]}, "retrieval_logs": {"group": "audit", "cols": [{"n": "retrieval_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "query_text", "t": "TEXT", "pk": false, "fk": null}, {"n": "retrieved_memory_ids", "t": "JSONB", "pk": false, "fk": null}, {"n": "retrieval_reason", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["session_id", "message_id"]}, "retention_logs": {"group": "audit", "cols": [{"n": "retention_id", "t": "UUID", "pk": true, "fk": null}, {"n": "memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "CASCADE"}}, {"n": "action", "t": "retention_action", "pk": false, "fk": null}, {"n": "reason", "t": "TEXT", "pk": false, "fk": null}, {"n": "score", "t": "DOUBLE PRECISION", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["memory_id"]}, "media": {"group": "feature", "cols": [{"n": "media_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "source_message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "filename", "t": "TEXT", "pk": false, "fk": null}, {"n": "url", "t": "TEXT", "pk": false, "fk": null}, {"n": "mime_type", "t": "TEXT", "pk": false, "fk": null}, {"n": "description", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id", "session_id", "source_message_id", "memory_id"]}, "user_settings": {"group": "feature", "cols": [{"n": "user_id", "t": "UUID", "pk": true, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "custom_instructions", "t": "TEXT", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id"]}, "search_logs": {"group": "audit", "cols": [{"n": "search_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "query_text", "t": "TEXT", "pk": false, "fk": null}, {"n": "provider", "t": "TEXT", "pk": false, "fk": null}, {"n": "results", "t": "JSONB", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["session_id", "message_id"]}, "documents": {"group": "feature", "cols": [{"n": "doc_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "filename", "t": "TEXT", "pk": false, "fk": null}, {"n": "mime_type", "t": "TEXT", "pk": false, "fk": null}, {"n": "char_count", "t": "BIGINT", "pk": false, "fk": null}, {"n": "preview", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["user_id", "session_id"]}, "document_chunks": {"group": "feature", "cols": [{"n": "chunk_id", "t": "UUID", "pk": true, "fk": null}, {"n": "doc_id", "t": "UUID", "pk": false, "fk": {"to": "documents", "col": "doc_id", "on_delete": "CASCADE"}}, {"n": "chunk_index", "t": "BIGINT", "pk": false, "fk": null}, {"n": "text", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}], "fks": ["doc_id"]}}, "positions": {"users": [0, 0], "chat_sessions": [330, -170], "messages": [330, 170], "memory_atoms": [660, 0], "fact_versions": [1010, -330], "retrieval_logs": [1010, -110], "retention_logs": [1010, 110], "search_logs": [1010, 330], "media": [1330, -290], "documents": [1330, -70], "document_chunks": [1330, 150], "user_settings": [1330, 380]}};
+const GROUPS = {
+  core:       { color: "#3b82f6", fill: "#16244a" },
+  conversation:{ color: "#22c55e", fill: "#10271c" },
+  hub:        { color: "#6366f1", fill: "#1c1b4a" },
+  audit:      { color: "#64748b", fill: "#151d2b" },
+  feature:    { color: "#a855f7", fill: "#241540" }
+};
+const expanded = {};
+
+function cardLabel(name, t, full) {
+  const g = GROUPS[t.group];
+  const pk = t.cols.filter(c => c.pk);
+  const fk = t.cols.filter(c => c.fk);
+  const rest = t.cols.filter(c => !c.pk && !c.fk);
+  const lines = [name];
+  if (full) {
+    for (const c of t.cols)
+      lines.push((c.pk ? "🔑 " : (c.fk ? "· " : "  ")) + c.n);
+  } else {
+    pk.forEach(c => lines.push("🔑 " + c.n));
+    if (fk.length) lines.push("· " + fk.map(c => c.n).join(", "));
+    if (rest.length) lines.push("… " + rest.length + " more");
+  }
+  return lines.join("\n");
+}
+
+const nodes = [];
+const edges = [];
+const byName = {};
+for (const [name, t] of Object.entries(D.tables)) {
+  const g = GROUPS[t.group];
+  byName[name] = { t, g, full: false };
+  nodes.push({
+    id: name, label: cardLabel(name, t, false), shape: "box",
+    color: { background: g.fill, border: g.color, highlight: { background: g.fill, border: "#ffffff" } },
+    font: { color: "#f1f5f9", face: "ui-monospace, Menlo, monospace", size: 12, multi: false },
+    borderRadius: 10, borderWidth: 2, widthConstraint: { minimum: 150, maximum: 240 },
+    x: D.positions[name][0], y: D.positions[name][1], fixed: { x: true, y: true },
+    mass: 4, title: name.toUpperCase() + "\n" + t.cols.map(c => c.n + " " + c.t + (c.fk ? " → " + c.fk.to + " (" + c.fk.on_delete + ")" : "")).join("\n")
+  });
+}
+for (const [child, t] of Object.entries(D.tables)) {
+  for (const c of t.cols) {
+    if (!c.fk) continue;
+    const g = GROUPS[byName[c.fk.to].g.color];
+    edges.push({
+      from: child, to: c.fk.to,
+      color: { color: byName[c.fk.to].g.color, opacity: 0.9 },
+      width: 1.8, dashes: c.fk.on_delete === "SET NULL" ? [5, 4] : false,
+      arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+      label: "N:1", font: { size: 10, color: "#cbd5e1", background: "#0f1220" },
+      title: child + "." + c.n + " → " + c.fk.to + "." + c.fk.col + "  [" + c.fk.on_delete + "]",
+      smooth: { enabled: true, type: "curvedCW", roundness: 0.12 }
+    });
+  }
+}
+
+const container = document.getElementById("erd");
+const network = new vis.Network(container, { nodes, edges }, {
+  physics: false,
+  interaction: { hover: true, tooltipDelay: 120, navigationButtons: true, keyboard: true },
+  nodes: { shadow: { enabled: true, color: "rgba(0,0,0,0.4)" } },
+  edges: { selectionWidth: 2.5 }
+});
+network.on("doubleClick", p => {
+  if (p.nodes.length !== 1) return;
+  const name = p.nodes[0];
+  byName[name].full = !byName[name].full;
+  network.update([{ id: name, label: cardLabel(name, byName[name].t, byName[name].full) }]);
+});
+function expandAll() {
+  for (const name of Object.keys(byName)) byName[name].full = true;
+  network.update(Object.entries(byName).map(([name, o]) => ({ id: name, label: cardLabel(name, o.t, true) })));
+}
+function collapseAll() {
+  for (const name of Object.keys(byName)) byName[name].full = false;
+  network.update(Object.entries(byName).map(([name, o]) => ({ id: name, label: cardLabel(name, o.t, false) })));
+}
+window.onerror = (msg, src, line) => {
   const el = document.getElementById("err");
   el.style.display = "block";
   el.textContent = "Browser error: " + msg + " (" + (src || "") + ":" + line + ")";
-}};
+};
 </script>
-</body></html>
+</body>
+</html>

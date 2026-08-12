@@ -3,263 +3,275 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Memory DB — ERD & Knowledge Graph</title>
+<title>Memory DB — Knowledge Graph & ER Diagram</title>
 <style>
-  body {{ font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
-         background: #0f1220; color: #e5e7eb; margin: 0; }}
-  header {{ padding: 18px 28px; border-bottom: 1px solid #273047; }}
-  h1 {{ margin: 0; font-size: 20px; }}
-  header p {{ margin: 6px 0 0; color: #9ca3af; font-size: 13px; }}
-  .panel {{ background: #161a2e; margin: 24px 28px; border: 1px solid #273047;
-            border-radius: 12px; overflow: hidden; }}
-  .panel h2 {{ margin: 0; padding: 12px 18px; font-size: 15px;
-               background: #1b2040; border-bottom: 1px solid #273047; }}
-  .panel h2 small {{ color: #9ca3af; font-weight: 400; }}
-  #erd {{ background: #ffffff; padding: 18px; }}
-  #kg {{ height: 620px; }}
-  .legend {{ padding: 10px 18px; display: flex; gap: 16px; flex-wrap: wrap;
-             font-size: 12px; color: #9ca3af; border-top: 1px solid #273047; }}
-  .legend span {{ display: inline-flex; align-items: center; gap: 6px; }}
-  .swatch {{ width: 12px; height: 12px; border-radius: 50%; display: inline-block; }}
+  body { margin: 0; background: #0f1220; color: #e5e7eb;
+         font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
+  header { padding: 14px 24px; border-bottom: 1px solid #273047; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 4px 0 0; color: #9ca3af; font-size: 12px; }
+  .tabs { display: flex; gap: 6px; padding: 10px 24px 0; }
+  .tab { background: #1e2440; color: #94a3b8; border: 1px solid #34406b;
+          border-radius: 10px 10px 0 0; padding: 8px 18px; font-size: 13px;
+          cursor: pointer; }
+  .tab.active { background: #161a2e; color: #fff; border-bottom-color: #161a2e; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  #kg { height: 620px; }
+  #erd {
+    height: 620px; }
+  .legend { padding: 10px 24px; display: flex; gap: 18px; flex-wrap: wrap;
+             align-items: center; font-size: 12px; color: #9ca3af;
+             border-top: 1px solid #273047; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .ln { width: 22px; height: 3px; display: inline-block; }
+  button { background: #1e2440; color: #dbeafe; border: 1px solid #34406b;
+           border-radius: 8px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  button:hover { background: #2a3358; }
+  #kgbar { display: flex; gap: 8px; align-items: center; padding: 8px 24px; }
+  #err { display: none; background: #fde8e8; color: #7f1d1d; padding: 10px 16px;
+          font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 <script src="https://unpkg.com/vis-network@9.1.2/standalone/umd/vis-network.min.js"></script>
 </head>
 <body>
+<div id="err"></div>
 <header>
-  <h1>memory_db — ER Diagram &amp; Knowledge Graph</h1>
-  <p>Generated 2026-08-12T02:50:46+00:00 · schema from <code>db/schema.sql</code> · graph data from live database</p>
+  <h1>memory_db — Knowledge Graph &amp; ER Diagram</h1>
+  <p>Generated 2026-08-12T05:34:59+00:00 · graph from live database · ERD compiled from <code>db/schema.sql</code></p>
 </header>
+<div class="tabs">
+  <div class="tab active" data-tab="kg" onclick="switchTab('kg')">Knowledge Graph (9 atoms)</div>
+  <div class="tab" data-tab="erd" onclick="switchTab('erd')">ER Diagram (12 tables)</div>
+</div>
 
-<div class="panel">
-  <h2>Entity-Relationship Diagram <small>12 tables · mermaid erDiagram</small></h2>
-  <div id="erd"><pre class="mermaid">erDiagram
-    users ||--o{ chat_sessions : "owns"
-    chat_sessions ||--o{ messages : "contains"
-    users ||--o{ memory_atoms : "owns"
-    chat_sessions ||--o{ memory_atoms : "sourced_from"
-    messages ||--o{ memory_atoms : "produced"
-    memory_atoms ||--o{ fact_versions : "superseded_by(old)"
-    memory_atoms ||--o{ fact_versions : "resulted_in(new)"
-    chat_sessions ||--o{ retrieval_logs : "logged_for"
-    messages ||--o{ retrieval_logs : "queried_from"
-    memory_atoms ||--o{ retention_logs : "decided_upon"
-    users ||--o{ media : "uploaded"
-    chat_sessions ||--o{ media : "belongs_to"
-    messages ||--o{ media : "attached_to"
-    memory_atoms ||--o{ media : "captioned_by"
-    users ||--|| user_settings : "has"
-    chat_sessions ||--o{ search_logs : "searched_for"
-    messages ||--o{ search_logs : "triggered_by"
-    users ||--o{ documents : "uploaded"
-    chat_sessions ||--o{ documents : "uploaded_in"
-    documents ||--o{ document_chunks : "split_into"
-
-    users {
-        uuid user_id PK
-        text name
-        timestamptz created_at
-    }
-    chat_sessions {
-        uuid session_id PK
-        uuid user_id FK
-        text title
-        timestamptz created_at
-        timestamptz updated_at
-    }
-    messages {
-        uuid message_id PK
-        uuid session_id FK
-        message_role role
-        text content
-        timestamptz created_at
-    }
-    memory_atoms {
-        uuid memory_id PK
-        uuid user_id FK
-        uuid session_id FK
-        uuid source_message_id FK
-        memory_type type
-        text category
-        text subject
-        text attribute
-        text value
-        text content
-        priority_level priority
-        float confidence_score
-        bool is_confirmed
-        bool is_pinned
-        bool is_active
-        retention_status retention_status
-        int access_count
-        timestamptz valid_from
-        timestamptz valid_until
-        timestamptz expires_at
-        timestamptz created_at
-        timestamptz updated_at
-    }
-    fact_versions {
-        uuid version_id PK
-        uuid user_id FK
-        text subject
-        text attribute
-        uuid old_memory_id FK
-        uuid new_memory_id FK
-        timestamptz changed_at
-        text change_reason
-    }
-    retrieval_logs {
-        uuid retrieval_id PK
-        uuid session_id FK
-        uuid message_id FK
-        text query_text
-        jsonb retrieved_memory_ids
-        text retrieval_reason
-        timestamptz created_at
-    }
-    retention_logs {
-        uuid retention_id PK
-        uuid memory_id FK
-        retention_action action
-        text reason
-        timestamptz created_at
-    }
-    media {
-        uuid media_id PK
-        uuid user_id FK
-        uuid session_id FK
-        uuid source_message_id FK
-        uuid memory_id FK
-        text filename
-        text url
-        text mime_type
-        text description
-        timestamptz created_at
-    }
-    user_settings {
-        uuid user_id PK, FK
-        text custom_instructions
-        timestamptz updated_at
-    }
-    search_logs {
-        uuid search_id PK
-        uuid session_id FK
-        uuid message_id FK
-        text query_text
-        text provider
-        jsonb results
-        timestamptz created_at
-    }
-    documents {
-        uuid document_id PK
-        uuid user_id FK
-        uuid session_id FK
-        text filename
-        text mime_type
-        int size_bytes
-        text text_content
-        timestamptz created_at
-    }
-    document_chunks {
-        uuid chunk_id PK
-        uuid document_id FK
-        int chunk_index
-        text content
-        timestamptz created_at
-    }
-
-</pre></div>
+<div class="panel active" id="pane-kg">
+  <div id="kgbar">
+    <button onclick="network.fit()">Fit view</button>
+    <button onclick="network.clusterByConnection(0.5)">Cluster by session</button>
+    <button onclick="network.openCluster(0)">Expand all</button>
+  </div>
+  <div id="kg"></div>
   <div class="legend">
     <span><span class="swatch" style="background:#4f8ef7"></span>FACT</span>
     <span><span class="swatch" style="background:#22c55e"></span>PREFERENCE</span>
     <span><span class="swatch" style="background:#f59e0b"></span>GOAL</span>
     <span><span class="swatch" style="background:#8b5cf6"></span>RULE</span>
     <span><span class="swatch" style="background:#ec4899"></span>EVENT</span>
-    <span><span class="swatch" style="background:#9ca3af; border-radius:2px"></span>message</span>
-    <span><span class="swatch" style="background:#374151; border-radius:2px"></span>session</span>
-    <span><span style="width:14px;height:3px;background:#f43f5e;display:inline-block;vertical-align:middle"></span>fact version (old → new)</span>
-    <span><span style="width:14px;height:3px;background:#fbbf24;display:inline-block;vertical-align:middle"></span>retrieved</span>
-    <span><span style="width:14px;height:3px;background:#fff;display:inline-block;vertical-align:middle;opacity:.3"></span>provenance</span>
+    <span><span class="swatch" style="background:#a855f7"></span>document chunk</span>
+    <span><span class="sw" style="background:#374151"></span>session</span>
+    <span><span class="sw" style="background:#2b3148"></span>message</span>
+    <span><span class="ln" style="background:#f43f5e"></span>fact version (old → new)</span>
+    <span><span class="ln" style="background:#fbbf24"></span>retrieved</span>
+    <span><span class="ln" style="background:#ffffff;opacity:.3"></span>provenance</span>
+    <span><span style="width:14px;height:3px;background:#fbbf24;display:inline-block;vertical-align:middle"></span>gold ring = pinned</span>
+    <span><span style="width:14px;height:3px;background:#f43f5e;display:inline-block;vertical-align:middle"></span>red ring = expired</span>
   </div>
 </div>
 
-<div class="panel">
-  <h2>Knowledge Graph <small>memory atoms · provenance · versioning · retrieval (9 atoms)</small></h2>
-  <div id="kg"></div>
+<div class="panel" id="pane-erd">
+  <div id="erdbar" style="padding:8px 24px;display:flex;gap:8px">
+    <button onclick="erdExpandAll()">Show all columns</button>
+    <button onclick="erdCollapseAll()">Compact</button>
+    <button onclick="erdNetwork.fit()">Fit view</button>
+  </div>
+  <div id="erd"></div>
+  <div class="legend">
+    <span><span class="sw" style="background:#3b82f6"></span>Core</span>
+    <span><span class="sw" style="background:#22c55e"></span>Conversation</span>
+    <span><span class="sw" style="background:#6366f1"></span>Memory hub</span>
+    <span><span class="sw" style="background:#64748b"></span>Audit</span>
+    <span><span class="sw" style="background:#a855f7"></span>Feature</span>
+    <span><span class="sw" style="background:#fbbf24"></span>🔑 PK</span>
+    <span><span class="ln" style="background:#64748b"></span> N:1 · solid=CASCADE · dashed=SET NULL</span>
+  </div>
 </div>
 
 <script>
-const mermaid = window.mermaid;
-mermaid.initialize({ startOnLoad: true, theme: "default", er: { useMaxWidth: true, fontSize: 13 } });
-
-const json = {"generated": "2026-08-12T02:50:46+00:00", "atoms": [{"id": "44444444-0000-0000-0000-000000000101", "type": "FACT", "subject": "user", "attribute": "employer", "value": "Fusemachines", "content": "User works as a backend engineer at Fusemachines in Kathmandu.", "priority": "HIGH", "is_active": false, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000102", "type": "FACT", "subject": "user", "attribute": "job_title", "value": "Backend Engineer", "content": "User's job title is Backend Engineer.", "priority": "MEDIUM", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000103", "type": "FACT", "subject": "user", "attribute": "city", "value": "Kathmandu", "content": "User is based in Kathmandu.", "priority": "MEDIUM", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000104", "type": "PREFERENCE", "subject": "user", "attribute": "language_preference", "value": "Python over Java", "content": "User prefers Python over Java.", "priority": "LOW", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000003", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000105", "type": "PREFERENCE", "subject": "user", "attribute": "diet", "value": "vegetarian", "content": "User is vegetarian.", "priority": "HIGH", "is_active": true, "is_pinned": true, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000003", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000110", "type": "GOAL", "subject": "user", "attribute": "trip_to_pokhara", "value": "complete by 2026-08-31", "content": "User wants to complete a trip to Pokhara by end of August 2026.", "priority": "MEDIUM", "is_active": true, "is_pinned": false, "expired": false, "expires_at": "2026-09-01T05:44:59+05:45", "source_message_id": "33333333-0000-0000-0000-000000000010", "session_id": "22222222-0000-0000-0000-000000000002", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000111", "type": "RULE", "subject": "user", "attribute": "seat_preference", "value": "never window seat", "content": "Never book a window seat for the user -- causes motion sickness.", "priority": "CRITICAL", "is_active": true, "is_pinned": true, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000012", "session_id": "22222222-0000-0000-0000-000000000002", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000112", "type": "EVENT", "subject": "user", "attribute": "attended_event", "value": "Nepal AI Summit 2026, Pokhara", "content": "User attended the Nepal AI Summit 2026 in Pokhara.", "priority": "LOW", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000014", "session_id": "22222222-0000-0000-0000-000000000002", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000120", "type": "FACT", "subject": "user", "attribute": "employer", "value": "LeapFrog Technology", "content": "User now works at LeapFrog Technology as a backend engineer.", "priority": "HIGH", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000020", "session_id": "22222222-0000-0000-0000-000000000003", "created_at": "2026-08-11T11:58:14.367365+05:45"}], "messages": [{"message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "role": "user", "preview": "Hi, I'm Aarav. I work as a backend engineer at Fusemachines in Kathmandu."}, {"message_id": "33333333-0000-0000-0000-000000000002", "session_id": "22222222-0000-0000-0000-000000000001", "role": "assistant", "preview": "Nice to meet you, Aarav! I've noted that you're a backend engineer at Fusemachin"}, {"message_id": "33333333-0000-0000-0000-000000000003", "session_id": "22222222-0000-0000-0000-000000000001", "role": "user", "preview": "I prefer Python over Java, and I'm vegetarian."}, {"message_id": "33333333-0000-0000-0000-000000000004", "session_id": "22222222-0000-0000-0000-000000000001", "role": "assistant", "preview": "Got it -- Python preferred over Java, and vegetarian diet."}, {"message_id": "33333333-0000-0000-0000-000000000010", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user", "preview": "I'm planning a trip to Pokhara next month, goal is to finish it by end of August"}, {"message_id": "33333333-0000-0000-0000-000000000011", "session_id": "22222222-0000-0000-0000-000000000002", "role": "assistant", "preview": "Noted -- trip to Pokhara, target completion end of August 2026."}, {"message_id": "33333333-0000-0000-0000-000000000012", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user", "preview": "Also, never book me a window seat, I get motion sick."}, {"message_id": "33333333-0000-0000-0000-000000000013", "session_id": "22222222-0000-0000-0000-000000000002", "role": "assistant", "preview": "Understood -- no window seats, ever. I'll treat that as a standing rule."}, {"message_id": "33333333-0000-0000-0000-000000000014", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user", "preview": "Attended the Nepal AI Summit 2026 in Pokhara last week, it was great."}, {"message_id": "33333333-0000-0000-0000-000000000020", "session_id": "22222222-0000-0000-0000-000000000003", "role": "user", "preview": "Update: I actually left Fusemachines. I'm now a backend engineer at LeapFrog Tec"}, {"message_id": "33333333-0000-0000-0000-000000000021", "session_id": "22222222-0000-0000-0000-000000000003", "role": "assistant", "preview": "Thanks for letting me know -- I've updated your employer to LeapFrog Technology "}], "sessions": [{"session_id": "22222222-0000-0000-0000-000000000001", "title": "Onboarding chat"}, {"session_id": "22222222-0000-0000-0000-000000000002", "title": "Trip planning"}, {"session_id": "22222222-0000-0000-0000-000000000003", "title": "Follow-up: job change"}], "versions": [{"version_id": "55555555-0000-0000-0000-000000000201", "old_memory_id": "44444444-0000-0000-0000-000000000101", "new_memory_id": "44444444-0000-0000-0000-000000000120", "change_reason": "User reported changing employer.", "changed_at": "2026-08-05T16:55:20+05:45"}], "retrievals": [{"id": "77777777-0000-0000-0000-000000000401", "query": "user travel preferences and constraints", "atom_ids": ["44444444-0000-0000-0000-000000000111", "44444444-0000-0000-0000-000000000110"], "message_id": "33333333-0000-0000-0000-000000000010"}, {"id": "77777777-0000-0000-0000-000000000402", "query": "user employer", "atom_ids": ["44444444-0000-0000-0000-000000000101"], "message_id": "33333333-0000-0000-0000-000000000020"}]};
+const json = {"generated": "2026-08-12T05:34:59+00:00", "atoms": [{"id": "44444444-0000-0000-0000-000000000101", "type": "FACT", "subject": "user", "attribute": "employer", "value": "Fusemachines", "content": "User works as a backend engineer at Fusemachines in Kathmandu.", "priority": "HIGH", "is_active": false, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000102", "type": "FACT", "subject": "user", "attribute": "job_title", "value": "Backend Engineer", "content": "User's job title is Backend Engineer.", "priority": "MEDIUM", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000103", "type": "FACT", "subject": "user", "attribute": "city", "value": "Kathmandu", "content": "User is based in Kathmandu.", "priority": "MEDIUM", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000104", "type": "PREFERENCE", "subject": "user", "attribute": "language_preference", "value": "Python over Java", "content": "User prefers Python over Java.", "priority": "LOW", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000003", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000105", "type": "PREFERENCE", "subject": "user", "attribute": "diet", "value": "vegetarian", "content": "User is vegetarian.", "priority": "HIGH", "is_active": true, "is_pinned": true, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000003", "session_id": "22222222-0000-0000-0000-000000000001", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000110", "type": "GOAL", "subject": "user", "attribute": "trip_to_pokhara", "value": "complete by 2026-08-31", "content": "User wants to complete a trip to Pokhara by end of August 2026.", "priority": "MEDIUM", "is_active": true, "is_pinned": false, "expired": false, "expires_at": "2026-09-01T05:44:59+05:45", "source_message_id": "33333333-0000-0000-0000-000000000010", "session_id": "22222222-0000-0000-0000-000000000002", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000111", "type": "RULE", "subject": "user", "attribute": "seat_preference", "value": "never window seat", "content": "Never book a window seat for the user -- causes motion sickness.", "priority": "CRITICAL", "is_active": true, "is_pinned": true, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000012", "session_id": "22222222-0000-0000-0000-000000000002", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000112", "type": "EVENT", "subject": "user", "attribute": "attended_event", "value": "Nepal AI Summit 2026, Pokhara", "content": "User attended the Nepal AI Summit 2026 in Pokhara.", "priority": "LOW", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000014", "session_id": "22222222-0000-0000-0000-000000000002", "created_at": "2026-08-11T11:58:14.367365+05:45"}, {"id": "44444444-0000-0000-0000-000000000120", "type": "FACT", "subject": "user", "attribute": "employer", "value": "LeapFrog Technology", "content": "User now works at LeapFrog Technology as a backend engineer.", "priority": "HIGH", "is_active": true, "is_pinned": false, "expired": false, "expires_at": null, "source_message_id": "33333333-0000-0000-0000-000000000020", "session_id": "22222222-0000-0000-0000-000000000003", "created_at": "2026-08-11T11:58:14.367365+05:45"}], "messages": [{"message_id": "33333333-0000-0000-0000-000000000001", "session_id": "22222222-0000-0000-0000-000000000001", "role": "user", "preview": "Hi, I'm Aarav. I work as a backend engineer at Fusemachines in Kathmandu."}, {"message_id": "33333333-0000-0000-0000-000000000002", "session_id": "22222222-0000-0000-0000-000000000001", "role": "assistant", "preview": "Nice to meet you, Aarav! I've noted that you're a backend engineer at Fusemachin"}, {"message_id": "33333333-0000-0000-0000-000000000003", "session_id": "22222222-0000-0000-0000-000000000001", "role": "user", "preview": "I prefer Python over Java, and I'm vegetarian."}, {"message_id": "33333333-0000-0000-0000-000000000004", "session_id": "22222222-0000-0000-0000-000000000001", "role": "assistant", "preview": "Got it -- Python preferred over Java, and vegetarian diet."}, {"message_id": "33333333-0000-0000-0000-000000000010", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user", "preview": "I'm planning a trip to Pokhara next month, goal is to finish it by end of August"}, {"message_id": "33333333-0000-0000-0000-000000000011", "session_id": "22222222-0000-0000-0000-000000000002", "role": "assistant", "preview": "Noted -- trip to Pokhara, target completion end of August 2026."}, {"message_id": "33333333-0000-0000-0000-000000000012", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user", "preview": "Also, never book me a window seat, I get motion sick."}, {"message_id": "33333333-0000-0000-0000-000000000013", "session_id": "22222222-0000-0000-0000-000000000002", "role": "assistant", "preview": "Understood -- no window seats, ever. I'll treat that as a standing rule."}, {"message_id": "33333333-0000-0000-0000-000000000014", "session_id": "22222222-0000-0000-0000-000000000002", "role": "user", "preview": "Attended the Nepal AI Summit 2026 in Pokhara last week, it was great."}, {"message_id": "33333333-0000-0000-0000-000000000020", "session_id": "22222222-0000-0000-0000-000000000003", "role": "user", "preview": "Update: I actually left Fusemachines. I'm now a backend engineer at LeapFrog Tec"}, {"message_id": "33333333-0000-0000-0000-000000000021", "session_id": "22222222-0000-0000-0000-000000000003", "role": "assistant", "preview": "Thanks for letting me know -- I've updated your employer to LeapFrog Technology "}], "sessions": [{"session_id": "22222222-0000-0000-0000-000000000001", "title": "Onboarding chat"}, {"session_id": "22222222-0000-0000-0000-000000000002", "title": "Trip planning"}, {"session_id": "22222222-0000-0000-0000-000000000003", "title": "Follow-up: job change"}], "versions": [{"version_id": "55555555-0000-0000-0000-000000000201", "old_memory_id": "44444444-0000-0000-0000-000000000101", "new_memory_id": "44444444-0000-0000-0000-000000000120", "change_reason": "User reported changing employer.", "changed_at": "2026-08-05T16:55:20+05:45"}], "retrievals": [{"id": "77777777-0000-0000-0000-000000000401", "query": "user travel preferences and constraints", "atom_ids": ["44444444-0000-0000-0000-000000000111", "44444444-0000-0000-0000-000000000110"], "message_id": "33333333-0000-0000-0000-000000000010"}, {"id": "77777777-0000-0000-0000-000000000402", "query": "user employer", "atom_ids": ["44444444-0000-0000-0000-000000000101"], "message_id": "33333333-0000-0000-0000-000000000020"}], "documents": [{"doc_id": "99999999-0000-0000-0000-000000000601", "filename": "resume_aarav.pdf", "session_id": "22222222-0000-0000-0000-000000000001"}], "chunks": [{"chunk_id": "aaaaaaaa-0000-0000-0000-000000000701", "doc_id": "99999999-0000-0000-0000-000000000601", "preview": "Aarav Thapa -- Backend Engineer. 4 years experience with Python, PostgreSQL, distributed s"}, {"chunk_id": "aaaaaaaa-0000-0000-0000-000000000702", "doc_id": "99999999-0000-0000-0000-000000000601", "preview": "Previously at Fusemachines (2023-2026); currently transitioning to LeapFrog Technology."}]};
+const erdData = {"tables": {"users": {"group": "core", "cols": [{"n": "user_id", "t": "UUID", "pk": true, "fk": null}, {"n": "name", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "chat_sessions": {"group": "conversation", "cols": [{"n": "session_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "title", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "messages": {"group": "conversation", "cols": [{"n": "message_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "role", "t": "message_role", "pk": false, "fk": null}, {"n": "content", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "memory_atoms": {"group": "hub", "cols": [{"n": "memory_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "source_message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "memory_type", "t": "memory_type", "pk": false, "fk": null}, {"n": "category", "t": "TEXT", "pk": false, "fk": null}, {"n": "subject", "t": "TEXT", "pk": false, "fk": null}, {"n": "attribute", "t": "TEXT", "pk": false, "fk": null}, {"n": "value", "t": "TEXT", "pk": false, "fk": null}, {"n": "content", "t": "TEXT", "pk": false, "fk": null}, {"n": "priority", "t": "priority_level", "pk": false, "fk": null}, {"n": "confidence_score", "t": "DOUBLE PRECISION", "pk": false, "fk": null}, {"n": "is_confirmed", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "is_pinned", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "is_active", "t": "BOOLEAN", "pk": false, "fk": null}, {"n": "retention_status", "t": "retention_status", "pk": false, "fk": null}, {"n": "access_count", "t": "INTEGER", "pk": false, "fk": null}, {"n": "valid_from", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "valid_until", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "expires_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "fact_versions": {"group": "audit", "cols": [{"n": "version_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "subject", "t": "TEXT", "pk": false, "fk": null}, {"n": "attribute", "t": "TEXT", "pk": false, "fk": null}, {"n": "old_memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "new_memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "changed_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}, {"n": "change_reason", "t": "TEXT", "pk": false, "fk": null}]}, "retrieval_logs": {"group": "audit", "cols": [{"n": "retrieval_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "query_text", "t": "TEXT", "pk": false, "fk": null}, {"n": "retrieved_memory_ids", "t": "JSONB", "pk": false, "fk": null}, {"n": "retrieval_reason", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "retention_logs": {"group": "audit", "cols": [{"n": "retention_id", "t": "UUID", "pk": true, "fk": null}, {"n": "memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "CASCADE"}}, {"n": "action", "t": "retention_action", "pk": false, "fk": null}, {"n": "reason", "t": "TEXT", "pk": false, "fk": null}, {"n": "score", "t": "DOUBLE PRECISION", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "media": {"group": "feature", "cols": [{"n": "media_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "source_message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "memory_id", "t": "UUID", "pk": false, "fk": {"to": "memory_atoms", "col": "memory_id", "on_delete": "SET"}}, {"n": "filename", "t": "TEXT", "pk": false, "fk": null}, {"n": "url", "t": "TEXT", "pk": false, "fk": null}, {"n": "mime_type", "t": "TEXT", "pk": false, "fk": null}, {"n": "description", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "user_settings": {"group": "feature", "cols": [{"n": "user_id", "t": "UUID", "pk": true, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "custom_instructions", "t": "TEXT", "pk": false, "fk": null}, {"n": "updated_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "search_logs": {"group": "audit", "cols": [{"n": "search_id", "t": "UUID", "pk": true, "fk": null}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "CASCADE"}}, {"n": "message_id", "t": "UUID", "pk": false, "fk": {"to": "messages", "col": "message_id", "on_delete": "SET"}}, {"n": "query_text", "t": "TEXT", "pk": false, "fk": null}, {"n": "provider", "t": "TEXT", "pk": false, "fk": null}, {"n": "results", "t": "JSONB", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "documents": {"group": "feature", "cols": [{"n": "doc_id", "t": "UUID", "pk": true, "fk": null}, {"n": "user_id", "t": "UUID", "pk": false, "fk": {"to": "users", "col": "user_id", "on_delete": "CASCADE"}}, {"n": "session_id", "t": "UUID", "pk": false, "fk": {"to": "chat_sessions", "col": "session_id", "on_delete": "SET"}}, {"n": "filename", "t": "TEXT", "pk": false, "fk": null}, {"n": "mime_type", "t": "TEXT", "pk": false, "fk": null}, {"n": "char_count", "t": "BIGINT", "pk": false, "fk": null}, {"n": "preview", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}, "document_chunks": {"group": "feature", "cols": [{"n": "chunk_id", "t": "UUID", "pk": true, "fk": null}, {"n": "doc_id", "t": "UUID", "pk": false, "fk": {"to": "documents", "col": "doc_id", "on_delete": "CASCADE"}}, {"n": "chunk_index", "t": "BIGINT", "pk": false, "fk": null}, {"n": "text", "t": "TEXT", "pk": false, "fk": null}, {"n": "created_at", "t": "TIMESTAMPTZ", "pk": false, "fk": null}]}}, "positions": {"users": [0, 0], "chat_sessions": [330, -170], "messages": [330, 170], "memory_atoms": [660, 0], "fact_versions": [1010, -330], "retrieval_logs": [1010, -110], "retention_logs": [1010, 110], "search_logs": [1010, 330], "media": [1330, -290], "documents": [1330, -70], "document_chunks": [1330, 150], "user_settings": [1330, 380]}};
 const TYPE_COLORS = {"FACT": "#4f8ef7", "PREFERENCE": "#22c55e", "GOAL": "#f59e0b", "RULE": "#8b5cf6", "EVENT": "#ec4899"};
 
+// ============ Knowledge Graph ============
 const nodes = [];
 const edges = [];
-const byId = {};
+const msgById = {};
 
 for (const s of json.sessions) {
   nodes.push({
-    id: s.session_id, label: s.title, shape: "box",
-    color: { background: "#374151", border: "#4b5563" }, font: { color: "#d1d5db" },
-    title: "session"
+    id: s.session_id, label: s.title, shape: "box", level: 0,
+    color: { background: "#374151", border: "#4b5563", highlight: { border: "#fff" } },
+    font: { color: "#d1d5db", size: 13, bold: true },
+    borderRadius: 8, borderWidth: 1.5, mass: 8,
+    title: "session\n" + s.session_id
   });
 }
-const msgById = {};
 for (const m of json.messages) {
   msgById[m.message_id] = m;
   nodes.push({
     id: m.message_id, label: (m.role === "user" ? "🧑 " : "🤖 ") + m.preview,
-    shape: "box", color: { background: "#2b3148", border: "#4b5563" },
-    font: { color: "#9ca3af", size: 11 }, title: m.role
+    shape: "box", level: 1,
+    color: { background: "#2b3148", border: "#4b5563" },
+    font: { color: "#9ca3af", size: 10 }, borderRadius: 6, mass: 3,
+    title: (m.role === "user" ? "user" : "assistant") + " message\n" + m.preview
   });
-  edges.push({ from: m.session_id, to: m.message_id, color: { color: "#374151" }, width: 1 });
+  edges.push({ from: m.session_id, to: m.message_id, color: { color: "#4b5563" }, width: 1, physics: false });
 }
 for (const a of json.atoms) {
-  const infer = (a.value && !a.content.includes(a.value)) ? a.value : a.content;
+  const color = a.is_active
+    ? { background: TYPE_COLORS[a.type] || "#64748b", border: "#0f1220" }
+    : { background: "#3f3f46", border: "#71717a" };
   nodes.push({
     id: a.id,
-    label: a.subject + " → " + a.attribute + "\n" + infer.slice(0, 42),
-    shape: "dot", size: a.is_pinned ? 22 : 18,
-    color: a.is_active
-      ? { background: TYPE_COLORS[a.type] || "#64748b", border: a.is_pinned ? "#fbbf24" : "#0f1220" }
-      : { background: "#3f3f46", border: "#71717a", opacity: 0.6 },
-    font: { color: a.is_active ? "#f3f4f6" : "#a1a1aa", size: 12, background: "rgba(15,18,32,.85)" },
+    label: a.subject + " → " + a.attribute,
+    shape: "dot", size: a.is_pinned ? 24 : 18, mass: 1.5,
+    color: color,
+    font: { color: a.is_active ? "#f3f4f6" : "#a1a1aa", size: 11,
+             background: "rgba(15,18,32,.85)", strokeWidth: 0 },
     title: "[" + a.type + " · " + a.priority + "] " + a.content + "\n──\ncreated " + a.created_at.slice(0, 10)
       + (a.expires_at ? "\nexpires " + a.expires_at.slice(0, 10) : "")
       + (a.is_pinned ? "\n📌 pinned" : "") + (a.expired ? "\n⌛ EXPIRED" : "")
   });
-  byId[a.id] = a;
   const src = a.source_message_id || a.session_id;
-  if (src)
-    edges.push({ from: src, to: a.id, color: { color: "#ffffff", opacity: 0.25 }, dashes: [3, 3], width: 1 });
+  if (src && (msgById[src] || json.sessions.some(s => s.session_id === src)))
+    edges.push({
+      from: src, to: a.id, color: { color: "#ffffff", opacity: 0.25 },
+      dashes: [3, 3], width: 1, physics: false
+    });
+}
+for (const d of json.documents) {
+  nodes.push({
+    id: d.doc_id, label: "📄 " + d.filename, shape: "box",
+    color: { background: "#241540", border: "#a855f7" },
+    font: { color: "#e9d5ff", size: 11 }, borderRadius: 6, mass: 5,
+    title: "document\n" + d.filename
+  });
+  if (d.session_id)
+    edges.push({ from: d.session_id, to: d.doc_id, color: { color: "#4b5563" }, width: 1, physics: false });
+}
+for (const c of json.chunks) {
+  nodes.push({
+    id: c.chunk_id, label: c.preview, shape: "box",
+    color: { background: "#241540", border: "#c084fc" },
+    font: { color: "#c4b5fd", size: 9 }, borderRadius: 4, mass: 2,
+    title: "chunk of " + c.doc_id.slice(0, 8) + "\n" + c.preview
+  });
+  edges.push({ from: c.doc_id, to: c.chunk_id, color: { color: "#a855f7", opacity: 0.5 }, width: 1.2, physics: false });
 }
 for (const v of json.versions) {
   edges.push({
     from: v.old_memory_id, to: v.new_memory_id, color: { color: "#f43f5e" }, width: 2.5,
-    arrows: "to", label: v.change_reason || "updated",
+    arrows: "to", label: v.change_reason || "updated", physics: false,
     font: { color: "#f43f5e", size: 10, background: "#161a2e" }
   });
 }
 for (const r of json.retrievals) {
+  if (!msgById[r.message_id]) continue;
   for (const aid of r.atom_ids) {
     edges.push({
-      from: r.message_id || r.id, to: aid, color: { color: "#fbbf24", opacity: 0.55 },
-      width: 1.5, dashes: [4, 4], title: "retrieved for: " + r.query
+      from: r.message_id, to: aid, color: { color: "#fbbf24", opacity: 0.55 },
+      width: 1.5, dashes: [4, 4], physics: false, title: "retrieved for: " + r.query
     });
   }
 }
 
-const container = document.getElementById("kg");
-const network = new vis.Network(container, { nodes, edges }, {
+const kgContainer = document.getElementById("kg");
+const network = new vis.Network(kgContainer, { nodes, edges }, {
   nodes: { borderWidth: 2, shadow: { enabled: true, color: "rgba(0,0,0,0.35)" } },
-  edges: { smooth: { type: "cubicBezier" }, selectionWidth: 2 },
-  physics: { solver: "forceAtlas2Based", forceAtlas2Based: {
-    gravitationalConstant: -60, centralGravity: 0.01, springLength: 140, springConstant: 0.08 },
-    stabilization: { iterations: 300 } },
+  edges: { smooth: { type: "dynamic" }, selectionWidth: 2 },
+  physics: {
+    solver: "barnesHut",
+    barnesHut: { gravitationalConstant: -4500, centralGravity: 0.08, springLength: 150,
+                  springConstant: 0.05, damping: 0.1, avoidOverlap: 0.4 },
+    stabilization: { iterations: 400, fit: true }
+  },
   interaction: { hover: true, tooltipDelay: 120, navigationButtons: true, keyboard: true }
 });
+
+// ============ ER Diagram ============
+const GROUPS = {
+  core: { color: "#3b82f6", fill: "#16244a" }, conversation: { color: "#22c55e", fill: "#10271c" },
+  hub: { color: "#6366f1", fill: "#1c1b4a" }, audit: { color: "#64748b", fill: "#151d2b" },
+  feature: { color: "#a855f7", fill: "#241540" }
+};
+const erdExpanded = {};
+function erdCard(name, t, full) {
+  const pk = t.cols.filter(c => c.pk), fk = t.cols.filter(c => c.fk),
+        rest = t.cols.filter(c => !c.pk && !c.fk);
+  const lines = [name];
+  if (full) {
+    for (const c of t.cols) lines.push((c.pk ? "🔑 " : (c.fk ? "· " : "  ")) + c.n);
+  } else {
+    pk.forEach(c => lines.push("🔑 " + c.n));
+    if (fk.length) lines.push("· " + fk.map(c => c.n).join(", "));
+    if (rest.length) lines.push("… " + rest.length + " more");
+  }
+  return lines.join("\n");
+}
+const erdNodes = [];
+const erdEdges = [];
+const erdMeta = {};
+for (const [name, t] of Object.entries(erdData.tables)) {
+  const g = GROUPS[t.group];
+  erdMeta[name] = { t, full: false };
+  erdNodes.push({
+    id: "t:" + name, label: erdCard(name, t, false), shape: "box",
+    color: { background: g.fill, border: g.color, highlight: { border: "#fff" } },
+    font: { color: "#f1f5f9", face: "ui-monospace, Menlo, monospace", size: 12 },
+    borderRadius: 10, borderWidth: 2, widthConstraint: { minimum: 150, maximum: 240 },
+    x: erdData.positions[name][0], y: erdData.positions[name][1],
+    fixed: { x: true, y: true }, mass: 4,
+    title: name.toUpperCase() + "\n" + t.cols.map(c => c.n + " " + c.t + (c.fk ? " → " + c.fk.to + " (" + c.fk.on_delete + ")" : "")).join("\n")
+  });
+}
+for (const [child, t] of Object.entries(erdData.tables)) {
+  for (const c of t.cols) {
+    if (!c.fk) continue;
+    erdEdges.push({
+      from: "t:" + child, to: "t:" + c.fk.to,
+      color: { color: GROUPS[erdData.tables[c.fk.to].group].color, opacity: 0.9 },
+      width: 1.8, dashes: c.fk.on_delete === "SET NULL" ? [5, 4] : false,
+      arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+      label: "N:1", font: { size: 10, color: "#cbd5e1", background: "#0f1220" },
+      title: child + "." + c.n + " → " + c.fk.to + "." + c.fk.col + "  [" + c.fk.on_delete + "]",
+      smooth: { enabled: true, type: "curvedCW", roundness: 0.12 }
+    });
+  }
+}
+const erdContainer = document.getElementById("erd");
+const erdNetwork = new vis.Network(erdContainer, { nodes: erdNodes, edges: erdEdges }, {
+  physics: false,
+  interaction: { hover: true, tooltipDelay: 120, navigationButtons: true, keyboard: true }
+});
+erdNetwork.on("doubleClick", p => {
+  if (p.nodes.length !== 1) return;
+  const id = p.nodes[0];
+  const name = id.slice(2);
+  erdMeta[name].full = !erdMeta[name].full;
+  erdNetwork.update([{ id, label: erdCard(name, erdMeta[name].t, erdMeta[name].full) }]);
+});
+function erdExpandAll() {
+  for (const name of Object.keys(erdMeta)) erdMeta[name].full = true;
+  erdNetwork.update(Object.entries(erdMeta).map(([name, o]) => ({ id: "t:" + name, label: erdCard(name, o.t, true) })));
+}
+function erdCollapseAll() {
+  for (const name of Object.keys(erdMeta)) erdMeta[name].full = false;
+  erdNetwork.update(Object.entries(erdMeta).map(([name, o]) => ({ id: "t:" + name, label: erdCard(name, o.t, false) })));
+}
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "pane-" + name));
+  const net = name === "kg" ? network : erdNetwork;
+  net.redraw();
+  net.fit({ animation: false });
+}
+window.onerror = (msg, src, line) => {
+  const el = document.getElementById("err");
+  el.style.display = "block";
+  el.textContent = "Browser error: " + msg + " (" + (src || "") + ":" + line + ")";
+};
 </script>
 </body>
 </html>
